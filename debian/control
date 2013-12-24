@@ -1,11 +1,13 @@
 Source: libnet
 Section: net
 Priority: optional
-Maintainer: Stefanos Harhalakis <v13@v13.gr>
+Maintainer: Pexip AS <packaging@pexip.com>
+XSBC-Pexip-Original-Maintainer: Stefanos Harhalakis <v13@v13.gr>
 Build-Depends: debhelper (>= 7), sharutils, libpcap-dev, cdbs, quilt,
 	patchutils, autotools-dev
 Standards-Version: 3.8.2
 Homepage: http://libnet-dev.sourceforge.net/
+XS-Pexip-Upstream: http://archive.ubuntu.com/ubuntu/ precise
 
 Package: libnet1
 Architecture: any
