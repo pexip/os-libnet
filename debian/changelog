@@ -1,3 +1,11 @@
+libnet (1.1.6+dfsg-3.1) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * debian/control: Drop explicit Pre-Depends on multiarch-support (Closes:
+    #870544).
+
+ -- Aurelien Jarno <aurel32@debian.org>  Sat, 20 Jan 2018 12:41:30 +0100
+
 libnet (1.1.6+dfsg-3) unstable; urgency=medium
 
   * Use dh-autoreconf (closes: #751291), thanks to
