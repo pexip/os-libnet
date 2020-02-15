@@ -7,7 +7,7 @@ Build-Depends: debhelper (>= 9), sharutils, libpcap-dev, cdbs (>=0.4.93~),
  patchutils, dh-autoreconf
 Standards-Version: 3.9.5
 Homepage: http://libnet-dev.sourceforge.net/
-XS-Pexip-Upstream: http://ftp.debian.org/debian/ stretch
+XS-Pexip-Upstream: http://ftp.debian.org/debian/ buster
 
 Package: libnet1
 Architecture: any
