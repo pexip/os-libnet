@@ -13,7 +13,7 @@ Package: libnet1
 Architecture: any
 Section: libs
 Multi-Arch: same
-Pre-Depends: ${misc:Pre-Depends}, multiarch-support
+Pre-Depends: ${misc:Pre-Depends}
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: library for the construction and handling of network packets
  libnet provides a portable framework for low-level network packet
