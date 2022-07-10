@@ -1,3 +1,10 @@
+libnet (1.1.6+dfsg-3.2) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * Remove example Makefile. (Closes: #949348, #949346)
+
+ -- Vagrant Cascadian <vagrant@reproducible-builds.org>  Sun, 10 Jul 2022 13:45:56 -0700
+
 libnet (1.1.6+dfsg-3.1) unstable; urgency=medium
 
   * Non-maintainer upload.

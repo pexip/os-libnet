@@ -14,3 +14,6 @@ CFLAGS += -Wno-uninitialized -Wno-unused-but-set-variable
 DEB_INSTALL_CHANGELOGS_libnet1 := doc/CHANGELOG
 DEB_CONFIGURE_EXTRA_FLAGS += --libdir=\$${prefix}/lib/$(DEB_HOST_MULTIARCH)
 
+binary-install/libnet1-doc::
+	# Remove example Makefile which embeds build paths and binary paths
+	rm -f $(CURDIR)/debian/libnet1-doc/usr/share/doc/libnet1-doc/html/Makefile
