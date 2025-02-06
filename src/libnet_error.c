@@ -30,15 +30,7 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-#if (!(_WIN32) || (__CYGWIN__)) 
-#include "../include/libnet.h"
-#else
-#include "../include/win32/libnet.h"
-#endif
-
+#include "common.h"
 
 char *
 libnet_geterror(libnet_t *l)
@@ -51,5 +43,9 @@ libnet_geterror(libnet_t *l)
     return (l->err_buf);
 }
 
-
-/* EOF */
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

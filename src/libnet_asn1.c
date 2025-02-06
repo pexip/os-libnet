@@ -33,34 +33,29 @@
  *  Copyright (c) 1998 - 2004 Mike D. Schiffman <mike@infonexus.com>
  *  All rights reserved.
  *
- * Copyright (c) 1993, 1994, 1995, 1996, 1998
- *	The Regents of the University of California.  All rights reserved.
- *
  * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that: (1) source code distributions
- * retain the above copyright notice and this paragraph in its entirety, (2)
- * distributions including binary code include the above copyright notice and
- * this paragraph in its entirety in the documentation or other materials
- * provided with the distribution, and (3) all advertising materials mentioning
- * features or use of this software display the following acknowledgement:
- * ``This product includes software developed by the University of California,
- * Lawrence Berkeley Laboratory and its contributors.'' Neither the name of
- * the University nor the names of its contributors may be used to endorse
- * or promote products derived from this software without specific prior
- * written permission.
- * THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-#if (!(_WIN32) || (__CYGWIN__)) 
-#include "../include/libnet.h"
-#else
-#include "../include/win32/libnet.h"
-#endif
+#include "common.h"
 
 uint8_t *
 libnet_build_asn1_int(uint8_t *data, int *datalen, uint8_t type, int32_t *int_p,
@@ -69,8 +64,8 @@ libnet_build_asn1_int(uint8_t *data, int *datalen, uint8_t type, int32_t *int_p,
     /*
      *  ASN.1 integer ::= 0x02 asnlength byte {byte}*
      */
-     register int32_t integer;
-     register uint32_t mask;
+     int32_t integer;
+     uint32_t mask;
 
     if (int_s != sizeof (int32_t))
     {
@@ -120,8 +115,8 @@ libnet_build_asn1_uint(uint8_t *data, int *datalen, uint8_t type, uint32_t *int_
     /*
      *  ASN.1 integer ::= 0x02 asnlength byte {byte}*
      */
-    register uint32_t integer;
-    register uint32_t mask;
+    uint32_t integer;
+    uint32_t mask;
     int add_null_byte = 0;
 
     if (int_s != sizeof (int32_t))
@@ -272,7 +267,7 @@ libnet_build_asn1_length(uint8_t *data, int *datalen, int len)
         *data++ = (uint8_t)((len >> 8) & 0xFF);
         *data++ = (uint8_t)(len & 0xFF);
     }
-    *datalen -= (data - start_data);
+    *datalen -= (int)(data - start_data);
     return (data);
 }
 
@@ -288,11 +283,11 @@ libnet_build_asn1_objid(uint8_t *data, int *datalen, uint8_t type, oid *objid,
      *  lastbyte ::= 0 7bitvalue
      */
     int asnlen;
-    register oid *op = objid;
+    oid *op = objid;
     uint8_t objid_size[MAX_OID_LEN];
-    register uint32_t objid_val;
+    uint32_t objid_val;
     uint32_t first_objid_val;
-    register int i;
+    int i;
 
     /* check if there are at least 2 sub-identifiers */
     if (objidlen < 2)
@@ -433,4 +428,9 @@ libnet_build_asn1_bitstring(uint8_t *data, int *datalen, uint8_t type,
     return (data + str_s);
 }
 
-/* EOF */
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

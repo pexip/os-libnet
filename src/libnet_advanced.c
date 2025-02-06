@@ -30,14 +30,7 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-#if (!(_WIN32) || (__CYGWIN__)) 
-#include "../include/libnet.h"
-#else
-#include "../include/win32/libnet.h"
-#endif
+#include "common.h"
 
 int
 libnet_adv_cull_packet(libnet_t *l, uint8_t **packet, uint32_t *packet_s)
@@ -45,12 +38,18 @@ libnet_adv_cull_packet(libnet_t *l, uint8_t **packet, uint32_t *packet_s)
     *packet = NULL;
     *packet_s = 0;
 
+#ifdef LIBNET_ENABLE_TESTS
+    /*
+     *  Allow to fetch the packet without advanced mode. Useful for unit tests.
+     */
+#else
     if (l->injection_type != LIBNET_LINK_ADV)
     {
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                "%s(): advanced link mode not enabled\n", __func__);
+                "%s(): advanced link mode not enabled", __func__);
         return (-1);
     }
+#endif
 
     /* checksums will be written in */
     return (libnet_pblock_coalesce(l, packet, packet_s));
@@ -65,18 +64,24 @@ libnet_adv_cull_header(libnet_t *l, libnet_ptag_t ptag, uint8_t **header,
     *header = NULL;
     *header_s = 0;
 
+#ifdef LIBNET_ENABLE_TESTS
+    /*
+     *  Allow to fetch the packet's header without advanced mode. Useful for unit tests.
+     */
+#else
     if (l->injection_type != LIBNET_LINK_ADV)
     {
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                "%s(): advanced link mode not enabled\n", __func__);
+                "%s(): advanced link mode not enabled", __func__);
         return (-1);
     }
+#endif
 
     p = libnet_pblock_find(l, ptag);
     if (p == NULL)
     {
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-            "%s(): ptag not found, you sure it exists?\n", __func__);
+            "%s(): ptag not found, you sure it exists?", __func__);
         return (-1);
     }
     *header   = p->buf;
@@ -88,18 +93,18 @@ libnet_adv_cull_header(libnet_t *l, libnet_ptag_t ptag, uint8_t **header,
 int
 libnet_adv_write_link(libnet_t *l, const uint8_t *packet, uint32_t packet_s)
 {
-    int c;
+    ssize_t c;
 
     if (l->injection_type != LIBNET_LINK_ADV)
     {
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                "%s(): advanced link mode not enabled\n", __func__);
+                "%s(): advanced link mode not enabled", __func__);
         return (-1);
     }
     c = libnet_write_link(l, packet, packet_s);
 
     /* do statistics */
-    if (c == packet_s)
+    if (c == (ssize_t)packet_s)
     {
         l->stats.packets_sent++;
         l->stats.bytes_written += c;
@@ -122,18 +127,18 @@ libnet_adv_write_link(libnet_t *l, const uint8_t *packet, uint32_t packet_s)
 int
 libnet_adv_write_raw_ipv4(libnet_t *l, const uint8_t *packet, uint32_t packet_s)
 {
-    int c;
+    ssize_t c;
 
     if (l->injection_type != LIBNET_RAW4_ADV)
     {
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                "%s(): advanced raw4 mode not enabled\n", __func__);
+                "%s(): advanced raw4 mode not enabled", __func__);
         return (-1);
     }
     c = libnet_write_raw_ipv4(l, packet, packet_s);
 
     /* do statistics */
-    if (c == packet_s)
+    if (c == (ssize_t)packet_s)
     {
         l->stats.packets_sent++;
         l->stats.bytes_written += c;
@@ -167,4 +172,9 @@ libnet_adv_free_packet(libnet_t *l, uint8_t *packet)
     free(packet);
 }
 
-/* EOF */
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

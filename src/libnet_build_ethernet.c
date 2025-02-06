@@ -30,14 +30,7 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-#if (!(_WIN32) || (__CYGWIN__)) 
-#include "../include/libnet.h"
-#else
-#include "../include/win32/libnet.h"
-#endif
+#include "common.h"
 
 libnet_ptag_t
 libnet_build_ethernet(const uint8_t *dst, const uint8_t *src, uint16_t type, 
@@ -59,8 +52,7 @@ const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
          snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
             "%s(): called with non-link layer wire injection primitive",
                     __func__);
-        p = NULL;
-        goto bad;
+        return (-1);
     }
 
     n = LIBNET_ETH_H + payload_s;
@@ -81,8 +73,7 @@ const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     memcpy(eth_hdr.ether_shost, src, ETHER_ADDR_LEN);  /* source address */
     eth_hdr.ether_type = htons(type);                  /* packet type */
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&eth_hdr, LIBNET_ETH_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&eth_hdr, LIBNET_ETH_H) == -1)
     {
         goto bad;
     }
@@ -146,8 +137,7 @@ libnet_autobuild_ethernet(const uint8_t *dst, uint16_t type, libnet_t *l)
     memcpy(eth_hdr.ether_shost, src, ETHER_ADDR_LEN);  /* source address */
     eth_hdr.ether_type = htons(type);                  /* packet type */
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&eth_hdr, LIBNET_ETH_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&eth_hdr, LIBNET_ETH_H) == -1)
     {
         goto bad;
     }
@@ -157,4 +147,10 @@ bad:
     libnet_pblock_delete(l, p);
     return (-1); 
 }
-/* EOF */
+
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

@@ -30,14 +30,7 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-#if (!(_WIN32) || (__CYGWIN__)) 
-#include "../include/libnet.h"
-#else
-#include "../include/win32/libnet.h"
-#endif
+#include "common.h"
 
 libnet_ptag_t
 libnet_build_igmp(uint8_t type, uint8_t reserved, uint16_t sum, uint32_t ip,
@@ -71,8 +64,7 @@ const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     igmp_hdr.igmp_sum          = (sum ? htons(sum) : 0);
     igmp_hdr.igmp_group.s_addr = ip;
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&igmp_hdr, LIBNET_IGMP_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&igmp_hdr, LIBNET_IGMP_H) == -1)
     {
         goto bad;
     }
@@ -96,4 +88,9 @@ bad:
     return (-1);
 }
 
-/* EOF */
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

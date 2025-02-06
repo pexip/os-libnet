@@ -30,14 +30,7 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-#if (!(_WIN32) || (__CYGWIN__)) 
-#include "../include/libnet.h"
-#else
-#include "../include/win32/libnet.h"
-#endif
+#include "common.h"
 
 libnet_ptag_t
 libnet_build_ntp(uint8_t leap_indicator, uint8_t version, uint8_t mode,
@@ -90,8 +83,7 @@ const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     ntp_hdr.ntp_xmt_ts.integer      = htonl(xmt_ts_int);
     ntp_hdr.ntp_xmt_ts.fraction     = htonl(xmt_ts_frac);
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&ntp_hdr, LIBNET_NTP_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&ntp_hdr, LIBNET_NTP_H) == -1)
     {
         goto bad;
     }
@@ -105,4 +97,9 @@ bad:
     return (-1);
 }
 
-/* EOF */
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

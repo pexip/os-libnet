@@ -29,14 +29,7 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-#if (!(_WIN32) || (__CYGWIN__)) 
-#include "../include/libnet.h"
-#else
-#include "../include/win32/libnet.h"
-#endif
+#include "common.h"
 
 libnet_ptag_t
 libnet_build_fddi(uint8_t fc, const uint8_t *dst, const uint8_t *src, uint8_t dsap,
@@ -90,8 +83,7 @@ uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     protocol_type = htons(type);
     memcpy(&fddi_hdr.fddi_type, &protocol_type, sizeof(int16_t));   /* Protocol Type */
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&fddi_hdr, LIBNET_FDDI_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&fddi_hdr, LIBNET_FDDI_H) == -1)
     {
         goto bad;
     }
@@ -164,8 +156,7 @@ uint8_t cf, const uint8_t *org, uint16_t type, libnet_t *l)
     protocol_type = htons(type);
     memcpy(&fddi_hdr.fddi_type, &protocol_type, sizeof(int16_t));
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&fddi_hdr, LIBNET_FDDI_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&fddi_hdr, LIBNET_FDDI_H) == -1)
     {
         goto bad;
     }
@@ -175,4 +166,10 @@ bad:
     libnet_pblock_delete(l, p);
     return (-1); 
 }
-/* EOF */
+
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

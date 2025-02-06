@@ -30,13 +30,7 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
 #include "./libnet_test.h"
-#ifdef __WIN32__
-#include "../include/win32/getopt.h"
-#endif
 
 void usage(char *);
 
@@ -149,7 +143,7 @@ main(int argc, char **argv)
             0,                                    /* checksum */
             src_ip,                               /* source IP */
             dst_ip,                               /* destination IP */
-            payload,                              /* payload */
+            (uint8_t *)payload,                   /* payload */
             payload_s,                            /* payload size */
             l,                                    /* libnet handle */
             0);
@@ -198,4 +192,3 @@ usage(char *name)
                     " [-i iface] [-c count = 10]\n ", name);
 }
 
-/* EOF */

@@ -29,7 +29,7 @@
  *
  */
 
-#include "../include/win32/libnet.h"
+#include "common.h"
 #include "packet32.h"
 
 BOOL WINAPI DllMain(HINSTANCE hinst, ULONG fdwReason, LPVOID lpReserved)
@@ -44,4 +44,9 @@ BOOL WINAPI DllMain(HINSTANCE hinst, ULONG fdwReason, LPVOID lpReserved)
     return (TRUE);
 }
 
-/* EOF */
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

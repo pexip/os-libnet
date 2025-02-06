@@ -30,14 +30,7 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-#if (!(_WIN32) || (__CYGWIN__)) 
-#include "../include/libnet.h"
-#else
-#include "../include/win32/libnet.h"
-#endif
+#include "common.h"
 
 libnet_ptag_t
 libnet_build_802_1x(uint8_t eap_ver, uint8_t eap_type, uint16_t length,
@@ -70,12 +63,11 @@ const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     dot1x_hdr.dot1x_type = eap_type;
     dot1x_hdr.dot1x_length = htons(length);
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&dot1x_hdr, LIBNET_802_1X_H);
-    if (n == (uint32_t)-1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&dot1x_hdr, LIBNET_802_1X_H) == -1)
     {
         goto bad;
     }
-    
+
     LIBNET_DO_PAYLOAD(l, p);
 
     return (ptag ? ptag : libnet_pblock_update(l, p, h,
@@ -85,4 +77,9 @@ bad:
     return (-1);
 }
 
-/* EOF */
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

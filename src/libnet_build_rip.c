@@ -30,14 +30,7 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-#if (!(_WIN32) || (__CYGWIN__)) 
-#include "../include/libnet.h"
-#else
-#include "../include/win32/libnet.h"
-#endif
+#include "common.h"
 
 libnet_ptag_t
 libnet_build_rip(uint8_t cmd, uint8_t version, uint16_t rd, uint16_t af,
@@ -78,8 +71,7 @@ libnet_ptag_t ptag)
     rip_hdr.rip_next_hop = next_hop;
     rip_hdr.rip_metric   = htonl(metric);
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&rip_hdr, LIBNET_RIP_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&rip_hdr, LIBNET_RIP_H) == -1)
     {
         goto bad;
     }
@@ -93,4 +85,9 @@ bad:
     return (-1);
 }
 
-/* EOF */
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

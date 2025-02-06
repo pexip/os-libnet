@@ -1,6 +1,4 @@
 /*
- *  $Id: libnet_test.h,v 1.3 2004/01/29 21:17:16 mike Exp $
- *
  *  libnet_test.h
  *
  *  Copyright (c) 1998 - 2001 Mike D. Schiffman <mike@infonexus.com>
@@ -9,11 +7,14 @@
 #ifndef __LIBNET_TEST_H
 #define __LIBNET_TEST_H
 
-#ifndef _WIN32
+#if (HAVE_CONFIG_H)
+#include "../include/config.h"
+#endif
+
 #include "../include/libnet.h"
-#else
-#include "../include/win32/libnet.h"
-#include "../include/win32/getopt.h"
+
+#if !defined(__WIN32__)
+# include <netinet/in.h>
 #endif
 
 #define libnet_timersub(tvp, uvp, vvp)                                  \
@@ -40,21 +41,22 @@ u_char org_code[3] = {0x00, 0x00, 0x00};
 void usage(char *);
 
 #if defined(__WIN32__)
-#include <win32/getopt.h>
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#ifndef _WIN32
-#include <sys/time.h>
-#endif
-#if defined(__GNUC__)         /* mingw compiler */
-extern __attribute__((dllimport)) char *optarg;
-#else   /* assume msvc */
-#ifndef _WIN32
-extern __dllspec(dllimport) char *optarg;
-#endif
-#endif
+  #include <getopt.h>  /* For non-MingW, this is a local libnet/win32/getopt.h */
+  #include <winsock2.h>
+  #include <ws2tcpip.h>
+
+  #ifndef _MSC_VER
+  #include <sys/time.h>
+  #endif
+
+// FIXME: weido... see #define LIBNET_API __declspec(dllexport) in win32/libnet.h...
+//#if defined(__GNUC__)         /* mingw compiler */
+//extern __attribute__((dllimport)) char *optarg;
+//#else   /* assume msvc */
+//extern __dllspec(dllimport) char *optarg;
+//#endif
+  
 #endif  /* __WIN32__ */
 
 #endif  /* __LIBNET_TEST_H */
 
-/* EOF */

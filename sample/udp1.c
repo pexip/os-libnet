@@ -30,13 +30,7 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
 #include "./libnet_test.h"
-#ifdef __WIN32__
-#include "../include/win32/getopt.h"
-#endif
 
 int
 main(int argc, char *argv[])
@@ -84,7 +78,7 @@ main(int argc, char *argv[])
             /*
              *  We expect the input to be of the form `ip.ip.ip.ip.port`.  We
              *  point cp to the last dot of the IP address/port string and
-             *  then seperate them with a NULL byte.  The optarg now points to
+             *  then separate them with a NULL byte.  The optarg now points to
              *  just the IP address, and cp points to the port.
              */
             case 'd':
@@ -204,7 +198,8 @@ main(int argc, char *argv[])
     fprintf(stderr, "Packets sent:  %lld\n"
                     "Packet errors: %lld\n"
                     "Bytes written: %lld\n",
-                    ls.packets_sent, ls.packet_errors, ls.bytes_written);
+                    (long long)ls.packets_sent, (long long)ls.packet_errors,
+		    (long long)ls.bytes_written);
     libnet_destroy(l);
     return (EXIT_SUCCESS);
 bad:
@@ -220,4 +215,3 @@ usage(char *name)
         " [-p payload]\n",
         name);
 }
-/* EOF */

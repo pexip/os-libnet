@@ -1,19 +1,28 @@
 #!/usr/bin/make -f
 
-include /usr/share/cdbs/1/rules/debhelper.mk
-include /usr/share/cdbs/1/rules/autoreconf.mk
-include /usr/share/cdbs/1/class/autotools.mk
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 
 #DEB_CONFIGURE_SCRIPT_ENV += LDFLAGS="-Wl,-z,defs,--as-needed"
 
 # Don't enable -Werror as the package may FTBFS when a new gcc is introduced
 # Use it for testing though
 # -Werror
-CFLAGS += -Wno-uninitialized -Wno-unused-but-set-variable
+export DEB_CFLAGS_MAINT_APPEND = -Wno-uninitialized -Wno-unused-but-set-variable
 
-DEB_INSTALL_CHANGELOGS_libnet1 := doc/CHANGELOG
 DEB_CONFIGURE_EXTRA_FLAGS += --libdir=\$${prefix}/lib/$(DEB_HOST_MULTIARCH)
+ifeq (,$(filter nodoc,$(DEB_BUILD_OPTIONS)))
+  DEB_CONFIGURE_EXTRA_FLAGS += --enable-doxygen-html
+endif
 
-binary-install/libnet1-doc::
+%:
+	dh $@
+
+override_dh_auto_configure:
+	dh_auto_configure -- $(DEB_CONFIGURE_EXTRA_FLAGS)
+
+override_dh_install:
+	dh_install
 	# Remove example Makefile which embeds build paths and binary paths
 	rm -f $(CURDIR)/debian/libnet1-doc/usr/share/doc/libnet1-doc/html/Makefile
+	# Remove extra license file
+	rm -f $(CURDIR)/debian/libnet1-doc/usr/share/doc/libnet/LICENSE

@@ -30,15 +30,15 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-#if (!(_WIN32) || (__CYGWIN__)) 
-#include "../include/libnet.h"
-#else
-#include "../include/win32/libnet.h"
+#include "common.h"
+
+#ifndef HAVE_SOCKLEN_T
+typedef int socklen_t;
 #endif
 
+/* TODO this doesn't make any sense, the code in the #else branch is littered
+   with conditionals on __WIN32__ that are never reachable, what happened?
+   */
 #if defined (__WIN32__)
 int
 libnet_open_raw4(libnet_t *l)
@@ -64,11 +64,9 @@ libnet_close_raw6(libnet_t *l)
     return (libnet_close_link_interface(l));
 }
 #else
-int
-libnet_open_raw4(libnet_t *l)
-{
-    int len; /* now supposed to be socklen_t, but maybe old systems used int? */
 
+static int libnet_finish_setup_socket(libnet_t *l)
+{
 #if !(__WIN32__)
      int n = 1;
 #if (__svr4__)
@@ -76,26 +74,74 @@ libnet_open_raw4(libnet_t *l)
 #else
     int *nptr = &n;
 #endif  /* __svr4__ */
-#else 
+#else
+	BOOL n;
+#endif
+    unsigned len;
+
+#ifdef SO_BROADCAST
+/*
+ * man 7 socket
+ *
+ * Set or get the broadcast flag. When  enabled,  datagram  sockets
+ * receive packets sent to a broadcast address and they are allowed
+ * to send packets to a broadcast  address.   This  option  has  no
+ * effect on stream-oriented sockets.
+ */
+    if (setsockopt(l->fd, SOL_SOCKET, SO_BROADCAST, nptr, sizeof(n)) == -1)
+    {
+        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
+                "%s(): set SO_BROADCAST failed: %s",
+                __func__, strerror(errno));
+        goto bad;
+    }
+#endif  /*  SO_BROADCAST  */
+
+#if (__linux__)
+    if(l->device != NULL)
+        if(setsockopt(l->fd, SOL_SOCKET, SO_BINDTODEVICE, l->device, strlen(l->device)) == -1) {
+            snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
+                "%s(): set SO_BINDTODEVICE failed: %s", __func__, strerror(errno));
+            goto bad;
+        }
+#endif  /* __linux__ */
+
+    return 0;
+
+bad:
+    return (-1);
+}
+
+int
+libnet_open_raw4(libnet_t *l)
+{
+#if !(__WIN32__)
+     int n = 1;
+#if (__svr4__)
+     void *nptr = &n;
+#else
+    int *nptr = &n;
+#endif  /* __svr4__ */
+#else
 	BOOL n;
 #endif
 
     if (l == NULL)
-    { 
+    {
         return (-1);
-    } 
+    }
 
     l->fd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
     if (l->fd == -1)
     {
-        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE, 
-                "%s(): SOCK_RAW allocation failed: %s\n",
+        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
+                "%s(): SOCK_RAW allocation failed: %s",
 		 __func__, strerror(errno));
         goto bad;
     }
 
 #ifdef IP_HDRINCL
-/* 
+/*
  * man raw
  *
  * The IPv4 layer generates an IP header when sending a packet unless
@@ -111,68 +157,21 @@ libnet_open_raw4(libnet_t *l)
 #endif
 
     {
-        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE, 
-                "%s(): set IP_HDRINCL failed: %s\n",
+        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
+                "%s(): set IP_HDRINCL failed: %s",
                 __func__, strerror(errno));
         goto bad;
     }
 #endif /*  IP_HDRINCL  */
 
-#ifdef SO_SNDBUF
 
-/*
- * man 7 socket 
- *
- * Sets and  gets  the  maximum  socket  send buffer in bytes. 
- *
- * Taken from libdnet by Dug Song
- */
-    len = sizeof(n);
-    if (getsockopt(l->fd, SOL_SOCKET, SO_SNDBUF, &n, &len) < 0)
-    {
-        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE, 
-		 "%s(): get SO_SNDBUF failed: %s\n",
-		 __func__, strerror(errno));
+    if (libnet_finish_setup_socket(l) == -1)
         goto bad;
-    }
-    
-    for (n += 128; n < 1048576; n += 128)
-    {
-        if (setsockopt(l->fd, SOL_SOCKET, SO_SNDBUF, &n, len) < 0) 
-        {
-            if (errno == ENOBUFS)
-            {
-                break;
-            }
-             snprintf(l->err_buf, LIBNET_ERRBUF_SIZE, 
-                     "%s(): set SO_SNDBUF failed: %s\n",
-                     __func__, strerror(errno));
-             goto bad;
-        }
-    }
-#endif
 
-#ifdef SO_BROADCAST
-/*
- * man 7 socket
- *
- * Set or get the broadcast flag. When  enabled,  datagram  sockets
- * receive packets sent to a broadcast address and they are allowed
- * to send packets to a broadcast  address.   This  option  has  no
- * effect on stream-oriented sockets.
- */
-    if (setsockopt(l->fd, SOL_SOCKET, SO_BROADCAST, nptr, sizeof(n)) == -1)
-    {
-        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                "%s(): set SO_BROADCAST failed: %s\n",
-                __func__, strerror(errno));
-        goto bad;
-    }
-#endif  /*  SO_BROADCAST  */
     return (l->fd);
 
 bad:
-    return (-1);    
+    return (-1);
 }
 
 
@@ -197,22 +196,6 @@ int libnet_open_raw6(libnet_t *l)
 int
 libnet_open_raw6(libnet_t *l)
 {
-#if !(__WIN32__)
-#if (__svr4__)
-     int one = 1;
-     void *oneptr = &one;
-#else
-#if (__linux__)
-    int one = 1;
-    int *oneptr = &one;
-#endif
-#endif  /* __svr4__ */
-#else
-    BOOL one;
-#endif
-
-/* Solaris IPv6 stuff */
-    
     if (l == NULL)
     { 
         return (-1);
@@ -222,27 +205,15 @@ libnet_open_raw6(libnet_t *l)
     if (l->fd == -1)
     {
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE, 
-                "%s(): SOCK_RAW allocation failed: %s\n", __func__,
+                "%s(): SOCK_RAW allocation failed: %s", __func__,
                 strerror(errno));
         goto bad;
     }
 
-#if (__linux__)
-    if (setsockopt(l->fd, SOL_SOCKET, SO_BROADCAST, oneptr, sizeof(one)) == -1)
-    {
-        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                "%s(): set SO_BROADCAST failed: %s\n", __func__,
-                strerror(errno));
-        goto bad;
-    }
-    if(l->device != NULL)
-        if(setsockopt(l->fd, SOL_SOCKET, SO_BINDTODEVICE, l->device, strlen(l->device)) == -1) {
-            snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                "%s(): set SO_BINDTODEVICE failed: %s\n", __func__, strerror(errno));
-            goto bad;
-        }
 
-#endif  /* __linux__ */
+    if (libnet_finish_setup_socket(l) == -1)
+        goto bad;
+
     return (l->fd);
 
 bad:
@@ -260,4 +231,10 @@ libnet_close_raw6(libnet_t *l)
     return (close(l->fd));
 }
 #endif
-/* EOF */
+
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

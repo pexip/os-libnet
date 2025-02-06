@@ -30,62 +30,32 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-#if (!(_WIN32) || (__CYGWIN__)) 
-#include "../include/libnet.h"
-#else
-#include "../include/win32/libnet.h"
-#endif
+#include "common.h"
 
-/* FIXME - unit test these - 0 is debian's version, else is -RC1's */
-/* Note about aliasing warning:
- *
- *   http://mail.opensolaris.org/pipermail/tools-gcc/2005-August/000047.html
- *
- * See RFC 1071, and:
- *
- *   http://mathforum.org/library/drmath/view/54379.html
- */
-#undef DEBIAN
 /* Note: len is in bytes, not 16-bit words! */
 int
 libnet_in_cksum(uint16_t *addr, int len)
 {
-    int sum;
-#ifdef DEBIAN
-    uint16_t last_byte;
-
-    sum = 0;
-    last_byte = 0;
-#else
+    int sum = 0;
     union
     {
         uint16_t s;
         uint8_t b[2];
-    }pad;
+    } pad;
 
     sum = 0;
-#endif
 
     while (len > 1)
     {
         sum += *addr++;
         len -= 2;
     }
-#ifdef DEBIAN
-    if (len == 1)
-    {
-        *(uint8_t *)&last_byte = *(uint8_t *)addr;
-        sum += last_byte;
-#else
+
     if (len == 1)
     {
         pad.b[0] = *(uint8_t *)addr;
         pad.b[1] = 0;
         sum += pad.s;
-#endif
     }
 
     return (sum);
@@ -133,7 +103,7 @@ static int check_ip_payload_size(libnet_t*l, const uint8_t *iphdr, int ip_hl, in
     if((iphdr+ip_hl+h_len) > end)
     {
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                "%s(): ip payload not inside packet (pktsz %d, iphsz %d, payloadsz %d)\n", func,
+                "%s(): ip payload not inside packet (pktsz %d, iphsz %d, payloadsz %d)", func,
 		(int)(end - iphdr), ip_hl, h_len);
         return -1;
     }
@@ -187,14 +157,15 @@ libnet_inet_checksum(libnet_t *l, uint8_t *iphdr, int protocol, int h_len, const
     /* will need to update this for ipv6 at some point */
     struct libnet_ipv4_hdr *iph_p = (struct libnet_ipv4_hdr *)iphdr;
     struct libnet_ipv6_hdr *ip6h_p = NULL; /* default to not using IPv6 */
-    int ip_hl   = 0;
-    int sum     = 0;
+    int ip_hl = 0;
+    int sum = 0;
+    uint8_t ip_nh = 0;
 
     /* Check for memory under/over reads/writes. */
     if(iphdr < beg || (iphdr+sizeof(*iph_p)) > end)
     {
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-            "%s(): ipv4 hdr not inside packet (where %d, size %d)\n", __func__,
+            "%s(): ipv4 hdr not inside packet (where %d, size %d)", __func__,
 	    (int)(iphdr-beg), (int)(end-beg));
         return -1;
     }
@@ -208,11 +179,50 @@ libnet_inet_checksum(libnet_t *l, uint8_t *iphdr, int protocol, int h_len, const
         ip6h_p = (struct libnet_ipv6_hdr *)iph_p;
         iph_p = NULL;
         ip_hl   = 40;
+        ip_nh = ip6h_p->ip_nh;
+
         if((uint8_t*)(ip6h_p+1) > end)
         {
             snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                    "%s(): ipv6 hdr not inside packet\n", __func__);
+                    "%s(): ipv6 hdr not inside packet", __func__);
             return -1;
+        }
+
+        /* FIXME this entire fragile exercise would be avoided if we just passed
+         * in the pointer to the protocol block 'q' we are checksumming, which
+         * we know.
+         */
+        while (ip_nh != protocol && (uint8_t*)ip6h_p + ip_hl + 1 < end)
+        {
+            /* next header is not the upper layer protocol */
+           switch (ip_nh)
+           {
+              case IPPROTO_DSTOPTS:
+              case IPPROTO_HOPOPTS:
+              case IPPROTO_ROUTING:
+              case IPPROTO_FRAGMENT:
+              case IPPROTO_AH:
+              case IPPROTO_ESP:
+              case IPPROTO_MH:
+                 /*
+                  * count option headers to the header length for
+                  * checksum processing
+                  */
+                 /* Common structure of ipv6 ext headers is:
+                  *  uint8: next header protocol
+                  *  uint8: length of this header, in multiples of 8, not
+                  *    including first eight octets
+                  * The pointer arithmetic below follows from above.
+                  */
+                 ip_nh = *((uint8_t*)ip6h_p+ip_hl); /* next next header */
+                 ip_hl += (*((uint8_t*)ip6h_p+ip_hl+1)+1)*8; /* ext header length */
+                 break;
+              default:
+                 snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
+                     "%s(): unsupported extension header (%d)", __func__, ip_nh);
+                 return -1;
+           }
+
         }
     }
     else
@@ -223,7 +233,7 @@ libnet_inet_checksum(libnet_t *l, uint8_t *iphdr, int protocol, int h_len, const
     if((iphdr+ip_hl) > end)
     {
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-            "%s(): ip hdr len not inside packet\n", __func__);
+            "%s(): ip hdr len not inside packet", __func__);
         return -1;
     }
 
@@ -238,7 +248,7 @@ libnet_inet_checksum(libnet_t *l, uint8_t *iphdr, int protocol, int h_len, const
             struct libnet_tcp_hdr *tcph_p =
                 (struct libnet_tcp_hdr *)(iphdr + ip_hl);
 
-	    h_len = end - (uint8_t*) tcph_p; /* ignore h_len, sum the packet we've coalesced */
+	    h_len = (int)(end - (uint8_t*) tcph_p); /* ignore h_len, sum the packet we've coalesced */
 
             CHECK_IP_PAYLOAD_SIZE();
 
@@ -292,7 +302,7 @@ libnet_inet_checksum(libnet_t *l, uint8_t *iphdr, int protocol, int h_len, const
             struct libnet_udp_hdr *udph_p =
                 (struct libnet_udp_hdr *)(iphdr + ip_hl);
 
-	    h_len = end - (uint8_t*) udph_p; /* ignore h_len, sum the packet we've coalesced */
+	    h_len = (int)(end - (uint8_t*) udph_p); /* ignore h_len, sum the packet we've coalesced */
 
             CHECK_IP_PAYLOAD_SIZE();
 
@@ -315,7 +325,7 @@ libnet_inet_checksum(libnet_t *l, uint8_t *iphdr, int protocol, int h_len, const
             struct libnet_icmpv4_hdr *icmph_p =
                 (struct libnet_icmpv4_hdr *)(iphdr + ip_hl);
 
-            h_len = end - (uint8_t*) icmph_p; /* ignore h_len, sum the packet we've coalesced */
+            h_len = (int)(end - (uint8_t*) icmph_p); /* ignore h_len, sum the packet we've coalesced */
 
             CHECK_IP_PAYLOAD_SIZE();
 
@@ -337,7 +347,7 @@ libnet_inet_checksum(libnet_t *l, uint8_t *iphdr, int protocol, int h_len, const
             struct libnet_icmpv6_hdr *icmph_p =
                 (struct libnet_icmpv6_hdr *)(iphdr + ip_hl);
 
-            h_len = end - (uint8_t*) icmph_p; /* ignore h_len, sum the packet we've coalesced */
+            h_len = (int)(end - (uint8_t*) icmph_p); /* ignore h_len, sum the packet we've coalesced */
 
             CHECK_IP_PAYLOAD_SIZE();
 
@@ -356,7 +366,7 @@ libnet_inet_checksum(libnet_t *l, uint8_t *iphdr, int protocol, int h_len, const
             struct libnet_igmp_hdr *igmph_p =
                 (struct libnet_igmp_hdr *)(iphdr + ip_hl);
 
-	    h_len = end - (uint8_t*) igmph_p; /* ignore h_len, sum the packet we've coalesced */
+	    h_len = (int)(end - (uint8_t*) igmph_p); /* ignore h_len, sum the packet we've coalesced */
 
             CHECK_IP_PAYLOAD_SIZE();
 
@@ -380,7 +390,7 @@ libnet_inet_checksum(libnet_t *l, uint8_t *iphdr, int protocol, int h_len, const
                 !(fv & (GRE_CSUM|GRE_VERSION_1)))
 	    {
 		snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                "%s(): can't compute GRE checksum (wrong flags_ver bits: 0x%x )\n",  __func__, fv);
+                "%s(): can't compute GRE checksum (wrong flags_ver bits: 0x%x )",  __func__, fv);
 		return (-1);
 	    }
 	    sum = libnet_in_cksum((uint16_t *)greh_p, h_len);
@@ -496,7 +506,7 @@ libnet_inet_checksum(libnet_t *l, uint8_t *iphdr, int protocol, int h_len, const
             if((iphdr+h_len) > end)
             {
                 snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                        "%s(): cdp payload not inside packet\n", __func__);
+                        "%s(): cdp payload not inside packet", __func__);
                 return -1;
             }
 
@@ -516,10 +526,36 @@ libnet_inet_checksum(libnet_t *l, uint8_t *iphdr, int protocol, int h_len, const
              *  the ISL frame itself.  Use the libnet_crc function.
              */
         }
+        case LIBNET_PROTO_UDLD:
+        {
+            /**
+             * Once again.
+             * iphdr points to the packet, which has the following structure:
+             *   IEEE 802.3 Ethernet  14 bytes
+             *   LLC                  8 bytes
+             *   UDLD                 <<<<---- udld_hdr_offset
+            */
+            /* FIXME: should we use ptrdiff_t for pointer arithmetics? */
+            int whole_packet_length = (end - iphdr); /* The length of IEEE 802.3 Ethernet + LLC + UDLD(include TLVs) */
+            if (whole_packet_length < 0)
+            {
+                snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
+                        "%s(): cannot calculate packet lenght", __func__);
+                return (-1);
+            }
+            const uint8_t udld_hdr_offset = (LIBNET_802_3_H + LIBNET_802_2SNAP_H);
+            int udld_packet_length = (whole_packet_length - udld_hdr_offset);
+
+            const uint16_t checksum = libnet_ip_check((uint16_t *)iphdr + (udld_hdr_offset/sizeof(uint16_t)), udld_packet_length);
+
+            struct libnet_udld_hdr *udld_hdr = (struct libnet_udld_hdr *)(iphdr + udld_hdr_offset);
+            udld_hdr->checksum = checksum;
+            break;
+        }
         default:
         {
             snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                "%s(): unsupported protocol %d\n", __func__, protocol);
+                "%s(): unsupported protocol %d", __func__, protocol);
             return (-1);
         }
     }
@@ -536,4 +572,9 @@ libnet_ip_check(uint16_t *addr, int len)
     return (LIBNET_CKSUM_CARRY(sum));
 }
 
-/* EOF */
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

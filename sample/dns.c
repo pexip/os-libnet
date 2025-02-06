@@ -30,13 +30,7 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
 #include "./libnet_test.h"
-#ifdef __WIN32__
-#include "../include/win32/getopt.h"
-#endif
 
 void
 usage(char *prog)
@@ -66,7 +60,7 @@ main(int argc, char *argv[])
     printf("libnet 1.1 packet shaping: DNSv4[raw]\n");
     
     /*
-     *  Initialize the library.  Root priviledges are required.
+     *  Initialize the library.  Root privileges are required.
      */
     l = libnet_init(
             LIBNET_RAW4,                            /* injection type */
@@ -140,7 +134,7 @@ main(int argc, char *argv[])
 	0,             /* num_anws_rr */
 	0,             /* num_auth_rr */
 	0,             /* num_addi_rr */
-	payload,
+	(uint8_t *)payload,
 	payload_s,
 	l,
 	0

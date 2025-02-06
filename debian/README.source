@@ -1,4 +1,0 @@
-The pristine package was altered to remove:
-
-	win32/*.suo win32/*.ncb win32/*.opt
-

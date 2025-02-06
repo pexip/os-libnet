@@ -30,14 +30,7 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-#if (!(_WIN32) || (__CYGWIN__)) 
-#include "../include/libnet.h"
-#else
-#include "../include/win32/libnet.h"
-#endif
+#include "common.h"
 
 libnet_ptag_t
 libnet_build_rpc_call(uint32_t rm, uint32_t xid, uint32_t prog_num, 
@@ -45,9 +38,12 @@ uint32_t prog_vers, uint32_t procedure, uint32_t cflavor, uint32_t clength,
 uint8_t *cdata, uint32_t vflavor, uint32_t vlength, const uint8_t *vdata, 
 const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
 {
+    (void)cdata; /* unused */
+    (void)vdata; /* unused */
     uint32_t n, h;
     libnet_pblock_t *p;
     struct libnet_rpc_call_tcp_hdr rpc_hdr;
+    int rc;
 
     if (l == NULL)
     { 
@@ -98,16 +94,16 @@ const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
 
     if (rm)
     {
-        n = libnet_pblock_append(l, p, (uint8_t *)&rpc_hdr, 
-                LIBNET_RPC_CALL_TCP_H);
+        rc = libnet_pblock_append(l, p, (uint8_t *)&rpc_hdr,
+                                  LIBNET_RPC_CALL_TCP_H);
     }
     else
     {
-        n = libnet_pblock_append(l, p, (uint8_t *)&rpc_hdr.rpc_common, 
+        rc = libnet_pblock_append(l, p, (uint8_t *)&rpc_hdr.rpc_common,
                 LIBNET_RPC_CALL_H);
     }
 
-    if (n == -1)
+    if (rc == -1)
     {
         goto bad;
     }
@@ -122,4 +118,9 @@ bad:
     return (-1);
 }
 
-/* EOF */
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

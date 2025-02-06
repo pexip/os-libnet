@@ -30,14 +30,7 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-#if (!(_WIN32) || (__CYGWIN__)) 
-#include "../include/libnet.h"
-#else
-#include "../include/win32/libnet.h"
-#endif
+#include "common.h"
 
 libnet_ptag_t
 libnet_build_dhcpv4(uint8_t opcode, uint8_t htype, uint8_t hlen, 
@@ -98,8 +91,7 @@ libnet_t *l, libnet_ptag_t ptag)
     }
     dhcp_hdr.dhcp_magic = htonl(DHCP_MAGIC);
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&dhcp_hdr, LIBNET_DHCPV4_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&dhcp_hdr, LIBNET_DHCPV4_H) == -1)
     {
         goto bad;
     }
@@ -107,14 +99,13 @@ libnet_t *l, libnet_ptag_t ptag)
     if (payload_s && !payload)
     {
          snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                 "%s(): payload inconsistency\n", __func__);
+                 "%s(): payload inconsistency", __func__);
         goto bad;
     }
  
     if (payload_s)
     {
-        n = libnet_pblock_append(l, p, payload, payload_s);
-        if (n == -1)
+        if (libnet_pblock_append(l, p, payload, payload_s) == -1)
         {
             goto bad;
         }
@@ -139,4 +130,9 @@ libnet_t *l, libnet_ptag_t ptag)
         l, ptag));
 }
 
-/* EOF */
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

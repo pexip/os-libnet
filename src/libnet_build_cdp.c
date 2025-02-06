@@ -30,14 +30,7 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-#if (!(_WIN32) || (__CYGWIN__)) 
-#include "../include/libnet.h"
-#else
-#include "../include/win32/libnet.h"
-#endif
+#include "common.h"
 
 libnet_ptag_t
 libnet_build_cdp(uint8_t version, uint8_t ttl, uint16_t sum, uint16_t type,
@@ -73,14 +66,12 @@ libnet_t *l, libnet_ptag_t ptag)
     cdp_hdr.cdp_type    = htons(type);
     cdp_hdr.cdp_len     = htons(len + 4);   /* 4 bytes for len and type */
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&cdp_hdr, LIBNET_CDP_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&cdp_hdr, LIBNET_CDP_H) == -1)
     {
         goto bad;
     }
 
-    n = libnet_pblock_append(l, p, value, len);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, value, len) == -1)
     {
         /* err msg set in libnet_pblock_append() */
         goto bad;
@@ -110,7 +101,6 @@ int
 libnet_build_cdp_value(uint16_t type, uint16_t len, uint8_t *value, libnet_t *l,
         libnet_ptag_t ptag)
 {
-    uint32_t n;
     libnet_pblock_t *p;
     struct libnet_cdp_value_hdr cdp_value_hdr;
 
@@ -159,14 +149,13 @@ libnet_build_cdp_value(uint16_t type, uint16_t len, uint8_t *value, libnet_t *l,
             break;
     }
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&cdp_value_hdr, LIBNET_CDP_VALUE_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&cdp_value_hdr,
+                             LIBNET_CDP_VALUE_H) == -1)
     {
         return (-1);
     }
 
-    n = libnet_pblock_append(l, p, value, len);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, value, len) == -1)
     {
         /* err msg set in libnet_pblock_append() */
         return (-1);
@@ -175,4 +164,9 @@ libnet_build_cdp_value(uint16_t type, uint16_t len, uint8_t *value, libnet_t *l,
     return (1);
 }
 
-/* EOF */
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

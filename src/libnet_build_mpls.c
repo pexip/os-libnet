@@ -30,14 +30,7 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-#if (!(_WIN32) || (__CYGWIN__)) 
-#include "../include/libnet.h"
-#else
-#include "../include/win32/libnet.h"
-#endif
+#include "common.h"
 
 libnet_ptag_t
 libnet_build_mpls(uint32_t label, uint8_t experimental, uint8_t bos, 
@@ -72,8 +65,7 @@ libnet_ptag_t ptag)
                               ((bos & 0x01)          <<  8) |
                               ((ttl & 0xff))));
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&mpls_hdr, LIBNET_MPLS_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&mpls_hdr, LIBNET_MPLS_H) == -1)
     {
         goto bad;
     }
@@ -96,4 +88,9 @@ bad:
     return (-1);
 }
 
-/* EOF */
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

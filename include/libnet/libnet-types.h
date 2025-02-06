@@ -37,4 +37,9 @@
 
 #endif  /* __LIBNET_TYPES_H */
 
-/* EOF */
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

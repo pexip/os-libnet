@@ -1,4 +1,5 @@
 usr/bin/libnet-config
 usr/lib/*/libnet.a
 usr/lib/*/libnet.so
+usr/lib/*/pkgconfig
 usr/include

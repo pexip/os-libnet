@@ -30,14 +30,7 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-#if (!(_WIN32) || (__CYGWIN__)) 
-#include "../include/libnet.h"
-#else
-#include "../include/win32/libnet.h"
-#endif
+#include "common.h"
 
 
 libnet_ptag_t
@@ -74,32 +67,27 @@ const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     arp_hdr.ar_pln = pln;              /* protocol address length */
     arp_hdr.ar_op  = htons(op);        /* opcode command */
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&arp_hdr, LIBNET_ARP_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&arp_hdr, LIBNET_ARP_H) == -1)
     {
         /* err msg set in libnet_pblock_append() */
         goto bad; 
     }
-    n = libnet_pblock_append(l, p, sha, hln);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, sha, hln) == -1)
     {
         /* err msg set in libnet_pblock_append() */
         goto bad;
     }
-    n = libnet_pblock_append(l, p, spa, pln);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, spa, pln) == -1)
     {
         /* err msg set in libnet_pblock_append() */
         goto bad;
     }
-    n = libnet_pblock_append(l, p, tha, hln);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, tha, hln) == -1)
     {
         /* err msg set in libnet_pblock_append() */
         goto bad;
     } 
-    n = libnet_pblock_append(l, p, tpa, pln);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, tpa, pln) == -1)
     {
         /* err msg set in libnet_pblock_append() */
         goto bad;
@@ -116,9 +104,9 @@ bad:
 
 libnet_ptag_t
 libnet_autobuild_arp(uint16_t op, const uint8_t *sha, const uint8_t *spa, const uint8_t *tha,
-uint8_t *tpa, libnet_t *l)
+const uint8_t *tpa, libnet_t *l)
 {
-    u_short hrd;
+    uint16_t hrd;
     
     switch (l->link_type)
     {
@@ -131,7 +119,7 @@ uint8_t *tpa, libnet_t *l)
         default:
             hrd = 0;
             snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                    "%s(): unsupported link type\n", __func__);
+                    "%s(): unsupported link type", __func__);
             return (-1);
         /* add other link-layers */
     }
@@ -152,4 +140,9 @@ uint8_t *tpa, libnet_t *l)
         0));                                    /* libnet id */
 }
 
-/* EOF */
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */
