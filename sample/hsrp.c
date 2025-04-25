@@ -29,13 +29,6 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#if ((_WIN32) && !(__CYGWIN__)) 
-#include "../include/win32/config.h"
-#else
-#include "../include/config.h"
-#endif
-#endif
 #include "./libnet_test.h"
 
 
@@ -94,7 +87,7 @@ main(int argc, char *argv[])
     }
 
     memset(authdata, 0, 8);
-    strncpy(authdata, "cisco", 5);
+    strncpy((char *)authdata, "cisco", 5);
 
 
     ptag = libnet_build_hsrp(
@@ -158,9 +151,9 @@ main(int argc, char *argv[])
     }
 
     
-    eth_dst = libnet_hex_aton(eth_dst, &c);
+    eth_dst = (char *)libnet_hex_aton(eth_dst, &c);
     ptag = libnet_autobuild_ethernet(
-	eth_dst,                                /* ethernet destination */
+	(uint8_t *)eth_dst,                     /* ethernet destination */
 	ETHERTYPE_IP,                           /* protocol type */
 	l);                                     /* libnet handle */
 

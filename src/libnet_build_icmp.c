@@ -30,14 +30,7 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-#if (!(_WIN32) || (__CYGWIN__)) 
-#include "../include/libnet.h"
-#else
-#include "../include/win32/libnet.h"
-#endif
+#include "common.h"
 
 #include <assert.h>
 
@@ -45,8 +38,7 @@
 #define LIBNET_BUILD_ICMP_ERR_FINISH(len)                                    \
 do                                                                           \
 {                                                                            \
-    n = libnet_pblock_append(l, p, (uint8_t *)&icmp_hdr, len);              \
-    if (n == -1)                                                             \
+    if (libnet_pblock_append(l, p, (uint8_t *)&icmp_hdr, len) == -1)         \
     {                                                                        \
         goto bad;                                                            \
     }                                                                        \
@@ -54,14 +46,13 @@ do                                                                           \
     if (payload_s && !payload)                                               \
     {                                                                        \
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,                             \
-                "%s(): payload inconsistency\n", __func__);                  \
+                "%s(): payload inconsistency", __func__);                    \
         goto bad;                                                            \
     }                                                                        \
                                                                              \
     if (payload_s)                                                           \
     {                                                                        \
-        n = libnet_pblock_append(l, p, payload, payload_s);                  \
-        if (n == -1)                                                         \
+        if (libnet_pblock_append(l, p, payload, payload_s) == -1)            \
         {                                                                    \
             goto bad;                                                        \
         }                                                                    \
@@ -107,8 +98,7 @@ libnet_t *l, libnet_ptag_t ptag)
     icmp_hdr.icmp_id   = htons(id);            /* packet id */
     icmp_hdr.icmp_seq  = htons(seq);           /* packet seq */
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&icmp_hdr, LIBNET_ICMPV4_ECHO_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&icmp_hdr, LIBNET_ICMPV4_ECHO_H) == -1)
     {
         goto bad;
     }
@@ -167,8 +157,8 @@ uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     icmp_hdr.icmp_seq  = htons(seq);    /* packet seq */
     icmp_hdr.icmp_mask = htonl(mask);   /* address mask */
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&icmp_hdr, LIBNET_ICMPV4_MASK_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&icmp_hdr,
+                             LIBNET_ICMPV4_MASK_H) == -1)
     {
         goto bad;
     }
@@ -229,8 +219,8 @@ const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     icmp_hdr.icmp_rtime = htonl(rtime);     /* receive timestamp */
     icmp_hdr.icmp_ttime = htonl(ttime);     /* transmit timestamp */
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&icmp_hdr, LIBNET_ICMPV4_TS_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&icmp_hdr,
+                             LIBNET_ICMPV4_TS_H) == -1)
     {
         goto bad;
     }
@@ -606,3 +596,9 @@ bad:
     return -1;
 }
 
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

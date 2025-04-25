@@ -30,14 +30,7 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-#if (!(_WIN32) || (__CYGWIN__)) 
-#include "../include/libnet.h"
-#else
-#include "../include/win32/libnet.h"
-#endif
+#include "common.h"
 
 libnet_ptag_t
 libnet_build_802_3(const uint8_t *dst, const uint8_t *src, uint16_t len, 
@@ -70,8 +63,7 @@ const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     memcpy(_802_3_hdr._802_3_shost, src, ETHER_ADDR_LEN);  /* src address */
     _802_3_hdr._802_3_len = htons(len);                   /* packet length */
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&_802_3_hdr, LIBNET_802_3_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&_802_3_hdr, LIBNET_802_3_H) == -1)
     {
         goto bad;
     }
@@ -85,4 +77,9 @@ bad:
     return (-1);
 }
 
-/* EOF */
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

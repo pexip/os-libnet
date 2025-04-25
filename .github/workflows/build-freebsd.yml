@@ -1,0 +1,37 @@
+name: FreeBSD
+
+on: [push, pull_request]
+
+env:
+  # https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners
+  MAKEFLAGS: -j3
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        name: [ freebsd-13-gcc, freebsd-13-clang ]
+        include:
+          - name: freebsd-13-gcc
+            os: macos-latest
+            cc: gcc
+          - name: freebsd-13-clang
+            os: macos-latest
+            cc: clang
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build
+        # https://github.com/vmactions/freebsd-vm
+        uses: vmactions/freebsd-vm@v0
+        with:
+          prepare: |
+            pkg install -y autotools gcc llvm doxygen tree
+          run: |
+            ./autogen.sh
+            ./configure --prefix=/usr CC=${{ matrix.cc }}
+
+            make V=1
+            make install-strip DESTDIR=/tmp
+            tree /tmp/usr

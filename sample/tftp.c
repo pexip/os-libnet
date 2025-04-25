@@ -49,7 +49,7 @@ main(int argc, char *argv[])
     char *filename = "/etc/passwd";
     char mode[] = "netascii";
     u_char *payload = NULL;
-    uint payload_s = 0;
+    uint32_t payload_s = 0;
     
 
     printf("libnet 1.1 packet shaping: UDP + payload[raw] == TFTP\n");
@@ -77,7 +77,7 @@ main(int argc, char *argv[])
             /*
              *  We expect the input to be of the form `ip.ip.ip.ip.port`.  We
              *  point cp to the last dot of the IP address/port string and
-             *  then seperate them with a NULL byte.  The optarg now points to
+             *  then separate them with a NULL byte.  The optarg now points to
              *  just the IP address, and cp points to the port.
              */
             case 'd':
@@ -204,4 +204,3 @@ usage(char *name)
         name);
 }
 
-/* EOF */

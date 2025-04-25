@@ -11,24 +11,36 @@
  *	The Regents of the University of California.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that: (1) source code distributions
- * retain the above copyright notice and this paragraph in its entirety, (2)
- * distributions including binary code include the above copyright notice and
- * this paragraph in its entirety in the documentation or other materials
- * provided with the distribution, and (3) all advertising materials mentioning
- * features or use of this software display the following acknowledgement:
- * ``This product includes software developed by the University of California,
- * Lawrence Berkeley Laboratory and its contributors.'' Neither the name of
- * the University nor the names of its contributors may be used to endorse
- * or promote products derived from this software without specific prior
- * written permission.
- * THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the University nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
+#include "common.h"
+
 #include <sys/param.h>  /* optionally get BSD define */
+#if !defined(__OpenBSD__) && !defined(__FreeBSD__)
 #include <sys/timeb.h>
+#endif
 #include <sys/file.h>
 #include <sys/ioctl.h>
 
@@ -36,17 +48,11 @@
 #include <sys/time.h>
 #include <net/bpf.h>
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif 
-#include "../include/libnet.h"
 #include <sys/sysctl.h>
 #include <net/route.h>
 #include <net/if_dl.h>
 #include <net/if_types.h>
 #include "../include/gnuc.h"
-
-#include <bpf.h>
 
 #ifdef HAVE_OS_PROTO_H
 #include "../include/os-proto.h"
@@ -61,9 +67,9 @@ libnet_bpf_open(char *err_buf)
     /*
      *  Go through all the minors and find one that isn't in use.
      */
-    for (i = 0;;i++)
+    for (i = 0; i < 1000; i++)
     {
-        sprintf(device, "/dev/bpf%d", i);
+        snprintf(device, sizeof(device), "/dev/bpf%d", i);
 
         fd = open(device, O_RDWR);
         if (fd == -1 && errno == EBUSY)
@@ -85,7 +91,7 @@ libnet_bpf_open(char *err_buf)
 
     if (fd == -1)
     {
-        snprintf(err_buf, LIBNET_ERRBUF_SIZE, "%s(): open(): (%s): %s\n",
+        snprintf(err_buf, LIBNET_ERRBUF_SIZE, "%s(): open(): (%s): %s",
                 __func__, device, strerror(errno));
     }
     return (fd);
@@ -110,7 +116,7 @@ libnet_open_link(libnet_t *l)
 
     if (l->device == NULL)
     {
-        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE, "%s(): NULL device\n", 
+        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE, "%s(): NULL device", 
                 __func__);
         goto bad;
     }
@@ -126,7 +132,7 @@ libnet_open_link(libnet_t *l)
      */
     if (ioctl(l->fd, BIOCVERSION, (caddr_t)&bv) < 0)
     {
-        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE, "%s(): BIOCVERSION: %s\n",
+        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE, "%s(): BIOCVERSION: %s",
                 __func__, strerror(errno));
         goto bad;
     }
@@ -134,7 +140,7 @@ libnet_open_link(libnet_t *l)
     if (bv.bv_major != BPF_MAJOR_VERSION || bv.bv_minor < BPF_MINOR_VERSION)
     {
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                "%s(): kernel bpf filter out of date\n", __func__);
+                "%s(): kernel bpf filter out of date", __func__);
         goto bad;
     }
 
@@ -146,7 +152,7 @@ libnet_open_link(libnet_t *l)
 
     if (ioctl(l->fd, BIOCSETIF, (caddr_t)&ifr) == -1)
     {
-        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE, "%s(): BIOCSETIF: (%s): %s\n",
+        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE, "%s(): BIOCSETIF: (%s): %s",
                 __func__, l->device, strerror(errno));
         goto bad;
     }
@@ -156,7 +162,7 @@ libnet_open_link(libnet_t *l)
      */
     if (ioctl(l->fd, BIOCGDLT, (caddr_t)&v) == -1)
     {
-        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE, "%s(): BIOCGDLT: %s\n",
+        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE, "%s(): BIOCGDLT: %s",
                 __func__, strerror(errno));
         goto bad;
     }
@@ -168,7 +174,7 @@ libnet_open_link(libnet_t *l)
 #if defined(BIOCGHDRCMPLT) && defined(BIOCSHDRCMPLT) && !(__APPLE__)
     if (ioctl(l->fd, BIOCSHDRCMPLT, &spoof_eth_src) == -1)
     {
-        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE, "%s(): BIOCSHDRCMPLT: %s\n",
+        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE, "%s(): BIOCSHDRCMPLT: %s",
                 __func__, strerror(errno));
         goto bad;
     }
@@ -247,7 +253,7 @@ libnet_write_link(libnet_t *l, const uint8_t *packet, uint32_t size)
     if (c != size)
     {
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                "%s(): %d bytes written (%s)\n", __func__, c, strerror(errno));
+                "%s(): %d bytes written (%s)", __func__, c, strerror(errno));
     }
     return (c);
 }
@@ -261,8 +267,6 @@ libnet_get_hwaddr(libnet_t *l)
     int8_t *buf, *next, *end;
     struct if_msghdr *ifm;
     struct sockaddr_dl *sdl;
-    /* This implementation is not-reentrant. */
-    static struct libnet_ether_addr ea;
 
     mib[0] = CTL_NET;
     mib[1] = AF_ROUTE;
@@ -287,7 +291,7 @@ libnet_get_hwaddr(libnet_t *l)
 
     if (sysctl(mib, 6, NULL, &len, NULL, 0) == -1)
     {
-        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE, "%s(): sysctl(): %s\n",
+        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE, "%s(): sysctl(): %s",
                 __func__, strerror(errno));
         return (NULL);
     }
@@ -295,13 +299,13 @@ libnet_get_hwaddr(libnet_t *l)
     buf = (int8_t *)malloc(len);
     if (buf == NULL)
     {
-        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE, "%s(): malloc(): %s\n",
+        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE, "%s(): malloc(): %s",
                 __func__, strerror(errno));
         return (NULL);
     }
     if (sysctl(mib, 6, buf, &len, NULL, 0) < 0)
     {
-        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE, "%s(): sysctl(): %s\n",
+        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE, "%s(): sysctl(): %s",
                 __func__, strerror(errno));
         free(buf);
         return (NULL);
@@ -311,23 +315,49 @@ libnet_get_hwaddr(libnet_t *l)
     for (next = buf ; next < end ; next += ifm->ifm_msglen)
     {
         ifm = (struct if_msghdr *)next;
+
         if (ifm->ifm_version != RTM_VERSION)
             continue;
+
         if (ifm->ifm_type == RTM_IFINFO)
         {
             sdl = (struct sockaddr_dl *)(ifm + 1);
-            if (sdl->sdl_type != IFT_ETHER)
+            if (sdl->sdl_type != IFT_ETHER
+#ifdef IFT_FASTETHER
+                && sdl->sdl_type != IFT_FASTETHER
+#endif
+#ifdef IFT_FASTETHERFX
+                && sdl->sdl_type != IFT_FASTETHERFX
+#endif
+#ifdef IFT_GIGABITETHERNET
+                && sdl->sdl_type != IFT_GIGABITETHERNET
+#endif
+
+                && sdl->sdl_type != IFT_L2VLAN)
                 continue;
-            if (strncmp(&sdl->sdl_data[0], l->device, sdl->sdl_nlen) == 0)
+            if (sdl->sdl_nlen == strlen(l->device)
+                && strncmp(&sdl->sdl_data[0], l->device, sdl->sdl_nlen) == 0)
             {
-                memcpy(ea.ether_addr_octet, LLADDR(sdl), ETHER_ADDR_LEN);
+                memcpy(l->link_addr.ether_addr_octet, LLADDR(sdl), ETHER_ADDR_LEN);
                 break;
             }
         }
     }
     free(buf);
-    return (&ea);
+    if (next == end)
+    {
+        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
+                 "%s(): interface %s of known type not found.",
+                 __func__, l->device);
+        return NULL;
+    }
+
+    return (&l->link_addr);
 }
 
-
-/* EOF */
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

@@ -81,7 +81,7 @@ main(int argc, char **argv)
             /*
              *  We expect the input to be of the form `ip.ip.ip.ip.port`.  We
              *  point cp to the last dot of the IP address/port string and
-             *  then seperate them with a NULL byte.  The optarg now points to
+             *  then separate them with a NULL byte.  The optarg now points to
              *  just the IP address, and cp points to the port.
              */
             case 't':
@@ -92,7 +92,7 @@ main(int argc, char **argv)
                 }
                 *cp++ = 0;
                 dst_prt = (u_short)atoi(cp);
-                if ((dst_ip = libnet_name2addr4(l, optarg, 1)) == -1)
+                if ((dst_ip = libnet_name2addr4(l, optarg, LIBNET_RESOLVE)) == -1)
                 {
                     fprintf(stderr, "Bad IP address: %s\n", optarg);
                     exit(EXIT_FAILURE);
@@ -197,4 +197,3 @@ usage(char *nomenclature)
 }
 
 
-/* EOF */

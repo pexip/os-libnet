@@ -81,7 +81,7 @@ main(int argc, char *argv[])
             /*
              *  We expect the input to be of the form `ip.ip.ip.ip.port`.  We
              *  point cp to the last dot of the IP address/port string and
-             *  then seperate them with a NULL byte.  The optarg now points to
+             *  then separate them with a NULL byte.  The optarg now points to
              *  just the IP address, and cp points to the port.
              */
             case 'd':
@@ -136,7 +136,7 @@ main(int argc, char *argv[])
         0,
         0,
         NULL,
-        payload,
+        (uint8_t *)payload,
         payload_s,
         l,
         0);
@@ -210,4 +210,3 @@ usage(char *name)
         " [-p payload]\n",
         name);
 }
-/* EOF */

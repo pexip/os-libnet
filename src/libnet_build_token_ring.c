@@ -29,14 +29,7 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-#if (!(_WIN32) || (__CYGWIN__)) 
-#include "../include/libnet.h"
-#else
-#include "../include/win32/libnet.h"
-#endif
+#include "common.h"
 
 libnet_ptag_t
 libnet_build_token_ring(uint8_t ac, uint8_t fc, const uint8_t *dst, const uint8_t *src, 
@@ -57,7 +50,7 @@ const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
             !(((l->injection_type) & LIBNET_ADV_MASK)))
     {
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                "%s(): called with non-link layer wire injection primitive\n",
+                "%s(): called with non-link layer wire injection primitive",
                 __func__);
         p = NULL;
         goto bad;
@@ -87,9 +80,8 @@ const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     memcpy(&token_ring_hdr.token_ring_llc_org_code, org, LIBNET_ORG_CODE_SIZE); 
     token_ring_hdr.token_ring_type              = htons(type);
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&token_ring_hdr, 
-            LIBNET_TOKEN_RING_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&token_ring_hdr,
+                             LIBNET_TOKEN_RING_H) == -1)
     {
         goto bad;
     }
@@ -126,7 +118,7 @@ libnet_t *l)
             !(((l->injection_type) & LIBNET_ADV_MASK)))
     {
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                "%s(): called with non-link layer wire injection primitive\n",
+                "%s(): called with non-link layer wire injection primitive",
                 __func__);         
         p = NULL;
         goto bad;
@@ -165,9 +157,8 @@ libnet_t *l)
     token_ring_hdr.token_ring_type              = htons(type);
 
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&token_ring_hdr, 
-            LIBNET_TOKEN_RING_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&token_ring_hdr,
+                             LIBNET_TOKEN_RING_H) == -1)
     {
         goto bad;
     }
@@ -177,4 +168,10 @@ bad:
     libnet_pblock_delete(l, p);
     return (-1); 
 }
-/* EOF */
+
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

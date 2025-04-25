@@ -1,6 +1,4 @@
 /*
- *  $Id: libnet_resolve.c,v 1.21 2004/11/09 07:05:07 mike Exp $
- *
  *  libnet
  *  libnet_resolve.c - various name resolution type routines
  *
@@ -30,14 +28,7 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-#if (!(_WIN32) || (__CYGWIN__)) 
-#include "../include/libnet.h"
-#else
-#include "../include/win32/libnet.h"
-#endif
+#include "common.h"
 
 #ifndef HAVE_GETHOSTBYNAME2
 struct hostent *
@@ -119,22 +110,29 @@ libnet_addr2name4_r(uint32_t in, uint8_t use_name, char *hostname,
 }
 
 uint32_t
-libnet_name2addr4(libnet_t *l, char *host_name, uint8_t use_name)
+libnet_name2addr4(libnet_t *l, const char *host_name, uint8_t use_name)
 {
     struct in_addr addr;
     struct hostent *host_ent; 
     uint32_t m;
-    uint val;
+    uint32_t val;
     int i;
 
     if (use_name == LIBNET_RESOLVE)
     {
-		if ((addr.s_addr = inet_addr(host_name)) == -1)
+        if ((addr.s_addr = inet_addr(host_name)) == INADDR_NONE)
         {
             if (!(host_ent = gethostbyname(host_name)))
             {
                 snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                        "%s(): %s\n", __func__, hstrerror(h_errno));
+                        "%s(): %s", __func__,
+#if (_WIN32)
+                            "gethostbyname failure"
+#else
+                            /* FIXME doesn't exist on windows, needs WSAGetLastError()/FormatMessage */
+                            hstrerror(h_errno)
+#endif
+                        );
                 /* XXX - this is actually 255.255.255.255 */
                 return (-1);
             }
@@ -153,7 +151,7 @@ libnet_name2addr4(libnet_t *l, char *host_name, uint8_t use_name)
             if (l)
             {
                 snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                    "%s(): expecting dots and decimals\n", __func__);
+                    "%s(): expecting dots and decimals", __func__);
             }
             /* XXX - this is actually 255.255.255.255 */
             return (-1);
@@ -175,7 +173,7 @@ libnet_name2addr4(libnet_t *l, char *host_name, uint8_t use_name)
                         if (l)
                         {
                             snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                            "%s(): value greater than 255\n", __func__);
+                            "%s(): value greater than 255", __func__);
                         }
                         /* XXX - this is actually 255.255.255.255 */
                         return (-1);
@@ -251,7 +249,7 @@ libnet_name2addr6(libnet_t *l, const char *host_name, uint8_t use_name)
         if (l)
         {        
             snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                "%s(): can't resolve IPv6 addresses\n", __func__);
+                "%s(): can't resolve IPv6 addresses", __func__);
         }
         return (in6addr_error);
 #else
@@ -261,7 +259,7 @@ libnet_name2addr6(libnet_t *l, const char *host_name, uint8_t use_name)
                 sizeof(struct in_addr), AF_INET6, NULL)))
 #else
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE, 
-                "%s(): %s\n", __func__, strerror(errno));
+                "%s(): %s", __func__, strerror(errno));
         return (in6addr_error);
 #endif
 #else
@@ -282,7 +280,7 @@ libnet_name2addr6(libnet_t *l, const char *host_name, uint8_t use_name)
         if (l)
         {        
                snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                "%s(): can't resolve IPv6 addresses.\n", __func__);
+                "%s(): can't resolve IPv6 addresses.", __func__);
         }
         return (in6addr_error);
 #else
@@ -291,7 +289,7 @@ libnet_name2addr6(libnet_t *l, const char *host_name, uint8_t use_name)
             if (l)
             {
                 snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                    "%s(): invalid IPv6 address\n", __func__);
+                    "%s(): invalid IPv6 address", __func__);
             }
             return (in6addr_error);
         }
@@ -318,7 +316,7 @@ libnet_get_ipaddr6(libnet_t *l)
     if (getifaddrs(&ifaddr) != 0)
     {
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                "%s(): getifaddrs(): %s\n", __func__, strerror(errno));
+                "%s(): getifaddrs(): %s", __func__, strerror(errno));
         return (in6addr_error);
     }
 
@@ -351,7 +349,7 @@ struct libnet_in6_addr
 libnet_get_ipaddr6(libnet_t *l)
 {
     snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-           "%s(): not yet Implemented\n", __func__);
+           "%s(): not yet Implemented", __func__);
     return (in6addr_error);
 }
 #endif /* WIN32 */
@@ -361,7 +359,7 @@ uint32_t
 libnet_get_ipaddr4(libnet_t *l)
 {
     struct ifreq ifr;
-    register struct sockaddr_in *sin;
+    struct sockaddr_in *sin;
     int fd;
 
     if (l == NULL)
@@ -374,7 +372,7 @@ libnet_get_ipaddr4(libnet_t *l)
     if (fd == -1)
     {
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                "%s(): socket(): %s\n", __func__, strerror(errno));
+                "%s(): socket(): %s", __func__, strerror(errno));
         return (-1);
     }
 
@@ -397,7 +395,7 @@ libnet_get_ipaddr4(libnet_t *l)
     if (ioctl(fd, SIOCGIFADDR, (int8_t*) &ifr) < 0)
     {
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                "%s(): ioctl(): %s\n", __func__, strerror(errno));
+                "%s(): ioctl(): %s", __func__, strerror(errno));
         close(fd);
         return (-1);
     }
@@ -409,14 +407,13 @@ libnet_get_ipaddr4(libnet_t *l)
 uint32_t
 libnet_get_ipaddr4(libnet_t *l)
 {
-    long npflen = 0;
+    long npflen = 1;
     struct sockaddr_in sin;
     struct npf_if_addr ipbuff;
 
     memset(&sin,0,sizeof(sin));
     memset(&ipbuff,0,sizeof(ipbuff));
 
-    npflen = sizeof(ipbuff);
     if (PacketGetNetInfoEx(l->device, &ipbuff, &npflen))
     {
         sin = *(struct sockaddr_in *)&ipbuff.IPAddress;
@@ -473,4 +470,9 @@ libnet_hex_aton(const char *s, int *len)
     return (buf);
 }
 
-/* EOF */
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

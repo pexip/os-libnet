@@ -33,14 +33,7 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-#if (!(_WIN32) || (__CYGWIN__)) 
-#include "../include/libnet.h"
-#else
-#include "../include/win32/libnet.h"
-#endif
+#include "common.h"
 
 libnet_ptag_t
 libnet_build_ospfv2(uint16_t len, uint8_t type, uint32_t rtr_id, 
@@ -78,8 +71,7 @@ uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     ospf_hdr.ospf_sum             = sum;
     ospf_hdr.ospf_auth_type       = htons(autype);  /* Type of auth */
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&ospf_hdr, LIBNET_OSPF_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&ospf_hdr, LIBNET_OSPF_H) == -1)
     {
         goto bad;
     }
@@ -108,14 +100,24 @@ libnet_build_ospfv2_hello(uint32_t netmask, uint16_t interval, uint8_t opts,
 uint8_t priority, uint32_t dead_int, uint32_t des_rtr, uint32_t bkup_rtr,
 const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
 {
+	return libnet_build_ospfv2_hello_neighbor(netmask, interval, opts,
+		  priority, dead_int, des_rtr, bkup_rtr, 0,
+		  payload, payload_s, l, ptag);
+}
+
+libnet_ptag_t
+libnet_build_ospfv2_hello_neighbor(uint32_t netmask, uint16_t interval, uint8_t opts,
+uint8_t priority, uint32_t dead_int, uint32_t des_rtr, uint32_t bkup_rtr, uint32_t neighbor,
+const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
+{
     uint32_t n, h;
     libnet_pblock_t *p;
     struct libnet_ospf_hello_hdr hello_hdr;
 
     if (l == NULL)
-    { 
+    {
         return (-1);
-    } 
+    }
 
     n = LIBNET_OSPF_HELLO_H + payload_s;
     h = 0;
@@ -129,7 +131,7 @@ const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     {
         return (-1);
     }
-    
+
     memset(&hello_hdr, 0, sizeof(hello_hdr));
     hello_hdr.hello_nmask.s_addr    = netmask;  /* Netmask */
     hello_hdr.hello_intrvl          = htons(interval);	/* # seconds since last packet sent */
@@ -138,24 +140,22 @@ const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     hello_hdr.hello_dead_intvl      = htonl(dead_int); /* Time til router is deemed down */
     hello_hdr.hello_des_rtr.s_addr  = des_rtr;	/* Networks designated router */
     hello_hdr.hello_bkup_rtr.s_addr = bkup_rtr; /* Networks backup router */
-    /*hello_hdr.hello_nbr.s_addr      = htonl(neighbor); */
+    hello_hdr.hello_nbr.s_addr      = htonl(neighbor);
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&hello_hdr, LIBNET_OSPF_HELLO_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&hello_hdr, LIBNET_OSPF_HELLO_H) == -1)
     {
         goto bad;
     }
 
     /* boilerplate payload sanity check / append macro */
     LIBNET_DO_PAYLOAD(l, p);
- 
-    return (ptag ? ptag : libnet_pblock_update(l, p, h, 
+
+    return (ptag ? ptag : libnet_pblock_update(l, p, h,
             LIBNET_PBLOCK_OSPF_HELLO_H));
 bad:
     libnet_pblock_delete(l, p);
     return (-1);
 }
-
 
 libnet_ptag_t
 libnet_build_ospfv2_dbd(uint16_t dgram_len, uint8_t opts, uint8_t type,
@@ -190,8 +190,8 @@ libnet_ptag_t ptag)
     dbd_hdr.dbd_type    = type;	            /* Type of exchange occuring */
     dbd_hdr.dbd_seq     = htonl(seqnum);    /* DBD sequence number */
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&dbd_hdr, LIBNET_OSPF_DBD_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&dbd_hdr,
+                             LIBNET_OSPF_DBD_H) == -1)
     {
         goto bad;
     }
@@ -208,7 +208,7 @@ bad:
 
 
 libnet_ptag_t
-libnet_build_ospfv2_lsr(uint32_t type, uint lsid, uint32_t advrtr, 
+libnet_build_ospfv2_lsr(uint32_t type, uint32_t lsid, uint32_t advrtr, 
 const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
 {
     uint32_t n, h;
@@ -238,8 +238,8 @@ const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     lsr_hdr.lsr_lsid	     = htonl(lsid);     /* Link State ID */
     lsr_hdr.lsr_adrtr.s_addr = htonl(advrtr);   /* Advertising router */
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&lsr_hdr, LIBNET_OSPF_LSR_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&lsr_hdr,
+                             LIBNET_OSPF_LSR_H) == -1)
     {
         goto bad;
     }
@@ -284,8 +284,7 @@ libnet_t *l, libnet_ptag_t ptag)
     memset(&lh_hdr, 0, sizeof(lh_hdr));
     lh_hdr.lsu_num = htonl(num);   /* Number of LSAs that will be bcasted */
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&lh_hdr, LIBNET_OSPF_LSU_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&lh_hdr, LIBNET_OSPF_LSU_H) == -1)
     {
         goto bad;
     }
@@ -302,7 +301,7 @@ bad:
 
 
 libnet_ptag_t
-libnet_build_ospfv2_lsa(uint16_t age, uint8_t opts, uint8_t type, uint lsid,
+libnet_build_ospfv2_lsa(uint16_t age, uint8_t opts, uint8_t type, uint32_t lsid,
 uint32_t advrtr, uint32_t seqnum, uint16_t sum, uint16_t len,
 const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
 {
@@ -338,8 +337,8 @@ const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     lsa_hdr.lsa_sum         = sum;
     lsa_hdr.lsa_len         = htons(h);
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&lsa_hdr, LIBNET_OSPF_LSA_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&lsa_hdr,
+                             LIBNET_OSPF_LSA_H) == -1)
     {
         goto bad;
     }
@@ -400,9 +399,8 @@ const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     rtr_lsa_hdr.rtr_tos_num     = tos;
     rtr_lsa_hdr.rtr_metric      = htons(metric);
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&rtr_lsa_hdr,
-            LIBNET_OSPF_LS_RTR_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&rtr_lsa_hdr,
+                             LIBNET_OSPF_LS_RTR_H) == -1)
     {
         goto bad;
     }
@@ -448,9 +446,8 @@ const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     net_lsa_hdr.net_nmask.s_addr    = htonl(nmask);
     net_lsa_hdr.net_rtr_id          = htonl(rtrid);
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&net_lsa_hdr,
-            LIBNET_OSPF_LS_NET_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&net_lsa_hdr,
+                             LIBNET_OSPF_LS_NET_H) == -1)
     {
         goto bad;
     }
@@ -467,7 +464,7 @@ bad:
 
 
 libnet_ptag_t
-libnet_build_ospfv2_lsa_sum(uint32_t nmask, uint32_t metric, uint tos, 
+libnet_build_ospfv2_lsa_sum(uint32_t nmask, uint32_t metric, uint32_t tos, 
 const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
 {
     uint32_t n, h;
@@ -497,9 +494,8 @@ const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     sum_lsa_hdr.sum_metric          = htonl(metric);
     sum_lsa_hdr.sum_tos_metric      = htonl(tos);
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&sum_lsa_hdr,
-            LIBNET_OSPF_LS_SUM_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&sum_lsa_hdr,
+                             LIBNET_OSPF_LS_SUM_H) == -1)
     {
         goto bad;
     }
@@ -516,7 +512,7 @@ bad:
 
 
 libnet_ptag_t
-libnet_build_ospfv2_lsa_as(uint32_t nmask, uint metric, uint32_t fwdaddr,
+libnet_build_ospfv2_lsa_as(uint32_t nmask, uint32_t metric, uint32_t fwdaddr,
 uint32_t tag, const uint8_t *payload, uint32_t payload_s, libnet_t *l,
 libnet_ptag_t ptag)
 {
@@ -548,9 +544,8 @@ libnet_ptag_t ptag)
     as_lsa_hdr.as_fwd_addr.s_addr   = htonl(fwdaddr);
     as_lsa_hdr.as_rte_tag           = htonl(tag);
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&as_lsa_hdr,
-            LIBNET_OSPF_LS_AS_EXT_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&as_lsa_hdr,
+                             LIBNET_OSPF_LS_AS_EXT_H) == -1)
     {
         goto bad;
     }
@@ -565,4 +560,9 @@ bad:
     return (-1);
 }
 
-/* EOF */
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

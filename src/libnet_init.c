@@ -30,14 +30,7 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-#if (!(_WIN32) || (__CYGWIN__)) 
-#include "../include/libnet.h"
-#else
-#include "../include/win32/libnet.h"
-#endif
+#include "common.h"
 
 libnet_t *
 libnet_init(int injection_type, const char *device, char *err_buf)
@@ -50,7 +43,7 @@ libnet_init(int injection_type, const char *device, char *err_buf)
     if ((WSAStartup(0x0202, &wsaData)) != 0)
     {
         snprintf(err_buf, LIBNET_ERRBUF_SIZE, 
-                "%s(): unable to initialize winsock 2\n", __func__);
+                "%s(): unable to initialize winsock 2", __func__);
         goto bad;
     }
 #endif
@@ -58,7 +51,7 @@ libnet_init(int injection_type, const char *device, char *err_buf)
     l = (libnet_t *)malloc(sizeof (libnet_t));
     if (l == NULL)
     {
-        snprintf(err_buf, LIBNET_ERRBUF_SIZE, "%s(): malloc(): %s\n", __func__,
+        snprintf(err_buf, LIBNET_ERRBUF_SIZE, "%s(): malloc(): %s", __func__,
                 strerror(errno));
         goto bad;
     }
@@ -108,7 +101,7 @@ libnet_init(int injection_type, const char *device, char *err_buf)
             break;
         default:
             snprintf(err_buf, LIBNET_ERRBUF_SIZE,
-                    "%s(): unsupported injection type\n", __func__);
+                    "%s(): unsupported injection type", __func__);
             goto bad;
             break;
     }
@@ -128,8 +121,10 @@ libnet_destroy(libnet_t *l)
 {
     if (l)
     {
-        close(l->fd);
-        free(l->device);
+        if (l->fd != -1)
+            close(l->fd);
+        if (l->device)
+            free(l->device);
         libnet_clear_packet(l);
         free(l);
     }
@@ -145,7 +140,7 @@ libnet_clear_packet(libnet_t *l)
         return;
     }
 
-    while((p = l->protocol_blocks))
+    while ((p = l->protocol_blocks))
     {
         libnet_pblock_delete(l, p);
     }
@@ -175,8 +170,28 @@ libnet_getfd(libnet_t *l)
         return (-1);
     } 
 
-    return (l->fd);
+    return (int)(l->fd);
 }
+
+#ifdef SO_SNDBUF
+int
+libnet_setfd_max_sndbuf(libnet_t *l, int max_bytes)
+{
+    if (l == NULL)
+        return (-1);
+
+    /* Try to set the buffer size to max_bytes */
+    if (setsockopt(l->fd, SOL_SOCKET, SO_SNDBUF, &max_bytes, sizeof(max_bytes)) < 0)
+    {
+        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
+                    "%s(): set SO_SNDBUF failed: %s",
+                    __func__, strerror(errno));
+        return (-1);
+    }
+
+    return (0);
+}
+#endif /* SO_SNDBUF */
 
 const char *
 libnet_getdevice(libnet_t *l)
@@ -257,4 +272,9 @@ libnet_getpacket_size(libnet_t *l)
     return (n);
 }
 
-/* EOF */
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

@@ -30,14 +30,7 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-#if (!(_WIN32) || (__CYGWIN__)) 
-#include "../include/libnet.h"
-#else
-#include "../include/win32/libnet.h"
-#endif
+#include "common.h"
 
 libnet_ptag_t
 libnet_build_isl(uint8_t *dhost, uint8_t type, uint8_t user,
@@ -77,8 +70,7 @@ uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     isl_hdr.isl_index   = htons(portindex);
     isl_hdr.isl_reserved= htons(reserved);
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&isl_hdr, LIBNET_ISL_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&isl_hdr, LIBNET_ISL_H) == -1)
     {
         goto bad;
     }
@@ -95,4 +87,9 @@ bad:
     return (-1);
 }
 
-/* EOF */
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

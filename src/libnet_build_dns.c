@@ -30,14 +30,7 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-#if (!(_WIN32) || (__CYGWIN__)) 
-#include "../include/libnet.h"
-#else
-#include "../include/win32/libnet.h"
-#endif
+#include "common.h"
 
 
 libnet_ptag_t
@@ -48,7 +41,7 @@ libnet_build_dnsv4(uint16_t h_len, uint16_t id, uint16_t flags,
 {
 
     uint32_t n, h;
-    uint offset;
+    uint32_t offset;
     libnet_pblock_t *p;
     struct libnet_dnsv4_hdr dns_hdr;
 
@@ -84,7 +77,7 @@ libnet_build_dnsv4(uint16_t h_len, uint16_t id, uint16_t flags,
      * anyway.
      */
     memset(&dns_hdr, 0, sizeof(dns_hdr));
-    dns_hdr.h_len       = htons(n - sizeof (dns_hdr.h_len));
+    dns_hdr.h_len       = htons((uint16_t)(n - sizeof (dns_hdr.h_len)));
     dns_hdr.id          = htons(id);
     dns_hdr.flags       = htons(flags);
     dns_hdr.num_q       = htons(num_q);
@@ -98,8 +91,7 @@ libnet_build_dnsv4(uint16_t h_len, uint16_t id, uint16_t flags,
      * but not in UDP packets. As they are the first 2 bytes of the header,
      * they are skipped if the packet is UDP...
      */
-    n = libnet_pblock_append(l, p, ((uint8_t *)&dns_hdr) + offset, h_len);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, ((uint8_t *)&dns_hdr) + offset, h_len) == -1)
     {
         goto bad;
     }
@@ -113,4 +105,9 @@ bad:
     return (-1);
 }
 
-/* EOF */
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

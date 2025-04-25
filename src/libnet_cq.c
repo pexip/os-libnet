@@ -31,14 +31,7 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-#if (!(_WIN32) || (__CYGWIN__)) 
-#include "../include/libnet.h"
-#else
-#include "../include/win32/libnet.h"
-#endif
+#include "common.h"
 
 /* private function prototypes */
 static libnet_cq_t *libnet_cq_find_internal(libnet_t *);
@@ -51,7 +44,7 @@ static libnet_cqd_t l_cqd = {0, CQ_LOCK_UNLOCKED, NULL};
 
 
 static int
-set_cq_lock(uint x) 
+set_cq_lock(uint32_t x) 
 {
     if (check_cq_lock(x))
     {
@@ -63,7 +56,7 @@ set_cq_lock(uint x)
 }
 
 static int
-clear_cq_lock(uint x) 
+clear_cq_lock(uint32_t x) 
 {
     if (!check_cq_lock(x))
     {
@@ -77,7 +70,7 @@ clear_cq_lock(uint x)
 int 
 libnet_cq_add(libnet_t *l, char *label)
 {
-    libnet_cq_t *new;
+    libnet_cq_t *new_cq;
 
     if (l == NULL) 
     {
@@ -88,14 +81,14 @@ libnet_cq_add(libnet_t *l, char *label)
     if (cq_is_wlocked()) 
     {
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                "%s(): can't add, context queue is write locked\n", __func__);
+                "%s(): can't add, context queue is write locked", __func__);
         return (-1);
     }
   
     /* ensure there is a label */
     if (label == NULL)
     {
-        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE, "%s(): empty label\n",
+        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE, "%s(): empty label",
                 __func__);
         return (-1);
     }
@@ -107,7 +100,7 @@ libnet_cq_add(libnet_t *l, char *label)
         if (l_cq == NULL)
         {
             snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                    "%s(): can't malloc initial context queue: %s\n",
+                    "%s(): can't malloc initial context queue: %s",
                     __func__, strerror(errno));
             return (-1);
         }
@@ -134,26 +127,26 @@ libnet_cq_add(libnet_t *l, char *label)
         return (-1);
     }
 
-    new = (libnet_cq_t *)malloc(sizeof (libnet_cq_t));
-    if (l_cq == NULL)
+    new_cq = (libnet_cq_t *)malloc(sizeof (libnet_cq_t));
+    if (new_cq == NULL)
     {
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                "%s(): can't malloc new context queue: %s\n",
+                "%s(): can't malloc new context queue: %s",
                 __func__, strerror(errno));
         return (-1);
     }
 
-    new->context = l;
+    new_cq->context = l;
 
     /* label the context with the user specified string */
     strncpy(l->label, label, LIBNET_LABEL_SIZE);
     l->label[LIBNET_LABEL_SIZE -1] = '\0';
 
-    new->next = l_cq;
-    new->prev = NULL;
+    new_cq->next = l_cq;
+    new_cq->prev = NULL;
 
-    l_cq->prev = new;
-    l_cq = new;
+    l_cq->prev = new_cq;
+    l_cq = new_cq;
 
     /* track the number of nodes in the context queue */
     l_cqd.node++;
@@ -170,7 +163,7 @@ libnet_cq_remove(libnet_t *l)
     if (l_cq == NULL) 
     {
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                "%s(): can't remove from empty context queue\n", __func__);
+                "%s(): can't remove from empty context queue", __func__);
         return (NULL);
     }
 
@@ -183,7 +176,7 @@ libnet_cq_remove(libnet_t *l)
     if (cq_is_wlocked()) 
     {
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                "%s(): can't remove, context queue is write locked\n",
+                "%s(): can't remove, context queue is write locked",
                 __func__);
         return (NULL);
     }
@@ -191,7 +184,7 @@ libnet_cq_remove(libnet_t *l)
     if ((p = libnet_cq_find_internal(l)) == NULL)
     {
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                "%s(): context not present in context queue\n", __func__);
+                "%s(): context not present in context queue", __func__);
         return (NULL);
     }
 
@@ -282,13 +275,13 @@ libnet_cq_dup_check(libnet_t *l, char *label)
         if (p->context == l)
         {
             snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                "%s(): context already in context queue\n", __func__);
+                "%s(): context already in context queue", __func__);
             return (1);
         }
         if (strncmp(p->context->label, label, LIBNET_LABEL_SIZE) == 0)
         {
             snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                    "%s(): duplicate label %s\n", __func__, label);
+                    "%s(): duplicate label %s", __func__, label);
             return (1);
         }
     }
@@ -344,6 +337,8 @@ libnet_cq_destroy()
         libnet_destroy(tmp->context);
         free(tmp);
     }
+    l_cq = NULL;
+    memset(&l_cqd, 0, sizeof(l_cqd));
 }
 
 libnet_t *
@@ -405,3 +400,9 @@ libnet_cq_end_loop()
     return (1);
 }
 
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

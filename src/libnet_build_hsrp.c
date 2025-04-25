@@ -29,14 +29,7 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-#if (!(_WIN32) || (__CYGWIN__)) 
-#include "../include/libnet.h"
-#else
-#include "../include/win32/libnet.h"
-#endif
+#include "common.h"
 
 libnet_ptag_t
 libnet_build_hsrp(uint8_t version, uint8_t opcode, uint8_t state, 
@@ -44,7 +37,6 @@ uint8_t hello_time, uint8_t hold_time, uint8_t priority, uint8_t group,
 uint8_t reserved, uint8_t authdata[HSRP_AUTHDATA_LENGTH], uint32_t virtual_ip,
 const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
 {
-    uint32_t n;
     libnet_pblock_t *p;
     struct libnet_hsrp_hdr hsrp_hdr;
 
@@ -75,8 +67,7 @@ const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     memcpy(hsrp_hdr.authdata, authdata, HSRP_AUTHDATA_LENGTH*sizeof(uint8_t));
     hsrp_hdr.virtual_ip = virtual_ip;
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&hsrp_hdr, LIBNET_HSRP_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&hsrp_hdr, LIBNET_HSRP_H) == -1)
     {
         goto bad;
     }
@@ -84,14 +75,13 @@ const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     if (payload_s && !payload)
     {
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                "%s(): payload inconsistency\n", __func__);
+                "%s(): payload inconsistency", __func__);
         goto bad;
     }
  
     if (payload_s)
     {
-        n = libnet_pblock_append(l, p, payload, payload_s);
-        if (n == -1)
+        if (libnet_pblock_append(l, p, payload, payload_s) == -1)
         {
             goto bad;
         }
@@ -102,4 +92,10 @@ bad:
     libnet_pblock_delete(l, p);
     return (-1);
 }
-/* EOF */
+
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

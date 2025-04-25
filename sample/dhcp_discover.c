@@ -31,13 +31,7 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
 #include "./libnet_test.h"
-#ifdef __WIN32__
-#include "../include/win32/getopt.h"
-#endif
 
 void
 usage(char *prog)
@@ -238,7 +232,8 @@ main(int argc, char *argv[])
         fprintf(stderr, "Packets sent:  %lld\n"
                     "Packet errors: %lld\n"
                     "Bytes written: %lld\n",
-                    ls.packets_sent, ls.packet_errors, ls.bytes_written);
+                    (long long)ls.packets_sent, (long long)ls.packet_errors,
+		    (long long)ls.bytes_written);
         libnet_destroy(l);
         
         free(options);

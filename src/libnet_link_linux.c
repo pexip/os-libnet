@@ -8,49 +8,44 @@
  *  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that: (1) source code distributions
- * retain the above copyright notice and this paragraph in its entirety, (2)
- * distributions including binary code include the above copyright notice and
- * this paragraph in its entirety in the documentation or other materials
- * provided with the distribution, and (3) all advertising materials mentioning
- * features or use of this software display the following acknowledgement:
- * ``This product includes software developed by the University of California,
- * Lawrence Berkeley Laboratory and its contributors.'' Neither the name of
- * the University nor the names of its contributors may be used to endorse
- * or promote products derived from this software without specific prior
- * written permission.
- * THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the University nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
+#include "common.h"
+
+
 #include <sys/time.h>
 
 #include <net/if.h>
-#if (__GLIBC__)
 #include <netinet/if_ether.h>
 #include <net/if_arp.h>
-#else
-#include <linux/if_arp.h>
-#include <linux/if_ether.h>
-#endif
 
-#if (HAVE_PACKET_SOCKET)
 #ifndef SOL_PACKET
 #define SOL_PACKET 263
 #endif  /* SOL_PACKET */
-#if __GLIBC__ >= 2 && __GLIBC_MINOR >= 1
 #include <netpacket/packet.h>
 #include <net/ethernet.h>     /* the L2 protocols */
-#else
-#include <asm/types.h>
-#include <linux/if_packet.h>
-#include <linux/if_ether.h>   /* The L2 protocols */
-#endif
-#endif  /* HAVE_PACKET_SOCKET */
 
 #include "../include/libnet.h"
 
@@ -80,11 +75,7 @@ libnet_open_link(libnet_t *l)
         return (-1);
     } 
 
-#if (HAVE_PACKET_SOCKET)
     l->fd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
-#else
-    l->fd = socket(PF_INET, SOCK_PACKET, htons(ETH_P_ALL));
-#endif
     if (l->fd == -1)
     {
         if (errno == EPERM) {
@@ -125,6 +116,7 @@ libnet_open_link(libnet_t *l)
         case ARPHRD_SLIP6:
         case ARPHRD_CSLIP6:
         case ARPHRD_PPP:
+        case ARPHRD_NONE:
             l->link_type = DLT_RAW;
             break;
         case ARPHRD_FDDI:
@@ -141,7 +133,7 @@ libnet_open_link(libnet_t *l)
 
         default:
             snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                "unknown physical layer type 0x%x\n",
+                "unknown physical layer type 0x%x",
                 ifr.ifr_hwaddr.sa_family);
         goto bad;
     }
@@ -157,7 +149,7 @@ libnet_open_link(libnet_t *l)
     if (setsockopt(l->fd, SOL_SOCKET, SO_BROADCAST, &n, sizeof(n)) == -1)
     {
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-		 "%s: set SO_BROADCAST failed: %s\n",
+		 "%s: set SO_BROADCAST failed: %s",
 		 __func__, strerror(errno));
         goto bad;
     }
@@ -188,7 +180,6 @@ libnet_close_link(libnet_t *l)
 }
 
 
-#if (HAVE_PACKET_SOCKET)
 static int
 get_iface_index(int fd, const char *device)
 {
@@ -205,18 +196,13 @@ get_iface_index(int fd, const char *device)
  
     return ifr.ifr_ifindex;
 }
-#endif
 
 
 int
 libnet_write_link(libnet_t *l, const uint8_t *packet, uint32_t size)
 {
-    int c;
-#if (HAVE_PACKET_SOCKET)
+    ssize_t c;
     struct sockaddr_ll sa;
-#else
-    struct sockaddr sa;
-#endif
 
     if (l == NULL)
     { 
@@ -224,7 +210,6 @@ libnet_write_link(libnet_t *l, const uint8_t *packet, uint32_t size)
     }
 
     memset(&sa, 0, sizeof (sa));
-#if (HAVE_PACKET_SOCKET)
     sa.sll_family    = AF_PACKET;
     sa.sll_ifindex   = get_iface_index(l->fd, l->device);
     if (sa.sll_ifindex == -1)
@@ -232,17 +217,13 @@ libnet_write_link(libnet_t *l, const uint8_t *packet, uint32_t size)
         return (-1);
     }
     sa.sll_protocol  = htons(ETH_P_ALL);
-#else
-	strncpy(sa.sa_data, l->device, sizeof (sa.sa_data) - 1);
-    sa.sa_data[sizeof (sa.sa_data) - 1] = 0;
-#endif
 
     c = sendto(l->fd, packet, size, 0,
             (struct sockaddr *)&sa, sizeof (sa));
-    if (c != size)
+    if (c != (ssize_t)size)
     {
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                "libnet_write_link(): only %d bytes written (%s)\n", c,
+                "libnet_write_link(): only %zd bytes written (%s)", c,
                 strerror(errno));
     }
     return (c);
@@ -254,11 +235,6 @@ libnet_get_hwaddr(libnet_t *l)
 {
     int fd;
     struct ifreq ifr;
-    struct libnet_ether_addr *eap;
-    /*
-     *  XXX - non-re-entrant!
-     */
-    static struct libnet_ether_addr ea;
 
     if (l == NULL)
     { 
@@ -270,7 +246,7 @@ libnet_get_hwaddr(libnet_t *l)
         if (libnet_select_device(l) == -1)
         {   
             snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                    "libnet_get_hwaddr: can't figure out a device to use\n");
+                    "libnet_get_hwaddr: can't figure out a device to use");
             return (NULL);
         }
     }
@@ -287,30 +263,28 @@ libnet_get_hwaddr(libnet_t *l)
     }
 
     memset(&ifr, 0, sizeof(ifr));
-    eap = &ea;
-   	strncpy(ifr.ifr_name, l->device, sizeof(ifr.ifr_name) - 1);
+    strncpy(ifr.ifr_name, l->device, sizeof(ifr.ifr_name) - 1);
     ifr.ifr_name[sizeof(ifr.ifr_name) - 1] = '\0';
 
-    if (ioctl(fd, SIOCGIFHWADDR, (int8_t *)&ifr) < 0)
+    if (ioctl(fd, SIOCGIFHWADDR, &ifr) < 0)
     {
         close(fd);
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
                 "ioctl: %s", strerror(errno));
         goto bad;
     }
-    memcpy(eap, &ifr.ifr_hwaddr.sa_data, ETHER_ADDR_LEN);
     close(fd);
-    return (eap);
+
+    return memcpy(l->link_addr.ether_addr_octet, &ifr.ifr_hwaddr.sa_data,
+                  ETHER_ADDR_LEN);
 
 bad:
     return (NULL);
 }
 
-/* ---- Emacs Variables ----
+/**
  * Local Variables:
- * c-basic-offset: 4
- * indent-tabs-mode: nil
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
  * End:
  */
-
-/* EOF */
