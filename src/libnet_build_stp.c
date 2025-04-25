@@ -30,14 +30,7 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-#if (!(_WIN32) || (__CYGWIN__)) 
-#include "../include/libnet.h"
-#else
-#include "../include/win32/libnet.h"
-#endif
+#include "common.h"
 
 libnet_ptag_t
 libnet_build_stp_conf(uint16_t id, uint8_t version, uint8_t bpdu_type,
@@ -128,8 +121,7 @@ uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
 
     /* until we get some data marshalling in place we can't use this */
     /*n = libnet_pblock_append(l, p, (uint8_t *)&stp_hdr, LIBNET_STP_CONF_H); */
-    n = libnet_pblock_append(l, p, stp_hdr, LIBNET_STP_CONF_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, stp_hdr, LIBNET_STP_CONF_H) == -1)
     {
         goto bad;
     }
@@ -177,8 +169,7 @@ const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     stp_hdr.stp_version   = version;
     stp_hdr.stp_bpdu_type = bpdu_type;
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&stp_hdr, LIBNET_STP_TCN_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&stp_hdr, LIBNET_STP_TCN_H) == -1)
     {
         goto bad;
     }
@@ -193,4 +184,9 @@ bad:
     return (-1);
 }
 
-/* EOF */
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

@@ -88,8 +88,8 @@ main(int argc, char *argv[])
 		break;
 
 	    case 'p':
-		strncpy(payload, optarg, sizeof(payload)-1);
-		payload_s = strlen(payload);
+		strncpy((char *)payload, optarg, sizeof(payload)-1);
+		payload_s = strlen((char *)payload);
 		break;
 
 	    case 'h':
@@ -110,13 +110,13 @@ main(int argc, char *argv[])
 	    device,                                 /* network interface */
             errbuf);                                /* error buffer */
 
-    printf("Using device %s\n", l->device);
-
     if (l == NULL)
     {
         fprintf(stderr, "libnet_init() failed: %s", errbuf);
         exit(EXIT_FAILURE); 
     }
+
+    printf("Using device %s\n", l->device);
 
     if ((dst_ip = libnet_name2addr4(l, dst, LIBNET_RESOLVE)) == -1)
     {
@@ -154,8 +154,8 @@ main(int argc, char *argv[])
     }
 
     eth_ptag = libnet_build_ethernet(
-        hwdst,                                      /* ethernet destination */
-        hwsrc,                                      /* ethernet source */
+        (uint8_t *)hwdst,                           /* ethernet destination */
+        (uint8_t *)hwsrc,                           /* ethernet source */
         ETHERTYPE_IP,                               /* protocol type */
         NULL,                                       /* payload */
         0,                                          /* payload size */
@@ -198,4 +198,3 @@ usage(char *name)
 	    name);
 }
 
-/* EOF */

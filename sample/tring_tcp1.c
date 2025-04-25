@@ -77,7 +77,7 @@ main(int argc, char *argv[])
             /*
              *  We expect the input to be of the form `ip.ip.ip.ip.port`.  We
              *  point cp to the last dot of the IP address/port string and
-             *  then seperate them with a NULL byte.  The optarg now points to
+             *  then separate them with a NULL byte.  The optarg now points to
              *  just the IP address, and cp points to the port.
              */
             case 'd':
@@ -132,7 +132,7 @@ main(int argc, char *argv[])
         0,                                          /* checksum */
         0,                                          /* urgent pointer */
         LIBNET_TCP_H + payload_s,                   /* TCP packet size */
-        payload,                                    /* payload */
+        (uint8_t *)payload,                         /* payload */
         payload_s,                                  /* payload size */
         l,                                          /* libnet handle */
         0);                                         /* libnet id */
@@ -211,4 +211,3 @@ usage(char *name)
         name);
 }
 
-/* EOF */

@@ -1,6 +1,4 @@
 /*
- *  $Id: libnet-structures.h,v 1.19 2004/11/09 07:05:07 mike Exp $
- *
  *  libnet-structures.h - Network routine library structures header file
  *
  *  Copyright (c) 1998 - 2004 Mike D. Schiffman <mike@infonexus.com>
@@ -32,7 +30,7 @@
 #ifndef __LIBNET_STRUCTURES_H
 #define __LIBNET_STRUCTURES_H
 
-#if ((__WIN32__) && !(__CYGWIN__))
+#if ((_WIN32) && !(__CYGWIN__))
 #include "Packet32.h"
 #endif
 
@@ -41,7 +39,7 @@ typedef struct libnet_port_list_chain libnet_plist_t;
 struct libnet_port_list_chain
 {
     uint16_t node;                     /* node number */
-    uint16_t bport;                    /* beggining port */
+    uint16_t bport;                    /* beginning port */
     uint16_t eport;                    /* terminating port */
     uint8_t  id;                       /* global array offset */
     libnet_plist_t *next;               /* next node in the list */
@@ -51,15 +49,9 @@ struct libnet_port_list_chain
 /* libnet statistics structure */
 struct libnet_stats
 {
-#if (!defined(__WIN32__) || (__CYGWIN__))
-    uint64_t packets_sent;             /* packets sent */
-    uint64_t packet_errors;            /* packets errors */
-    uint64_t bytes_written;            /* bytes written */
-#else
-    __int64 packets_sent;               /* packets sent */
-    __int64 packet_errors;              /* packets errors */
-    __int64 bytes_written;              /* bytes written */
-#endif
+    int64_t packets_sent;               /* packets sent */
+    int64_t packet_errors;              /* packets errors */
+    int64_t bytes_written;              /* bytes written */
 };
 
 
@@ -164,6 +156,20 @@ struct libnet_protocol_block
 #define LIBNET_PBLOCK_ICMPV6_NDP_NSOL_H 0x43    /* ICMPv6 NDP neighbor solicitation header */
 #define LIBNET_PBLOCK_ICMPV6_NDP_NADV_H 0x44    /* ICMPv6 NDP neighbor advertisement header */
 #define LIBNET_PBLOCK_ICMPV6_NDP_OPT_H  0x45    /* ICMPv6 NDP option */
+#define LIBNET_PBLOCK_LLDP_H            0x50    /* LLDP header */
+#define LIBNET_PBLOCK_LLDP_CHASSIS_H    0x51    /* LLDP Chassis header */
+#define LIBNET_PBLOCK_LLDP_PORT_H       0x52    /* LLDP Port header */
+#define LIBNET_PBLOCK_LLDP_TTL_H        0x53    /* LLDP TTL header */
+#define LIBNET_PBLOCK_LLDP_END_H        0x54    /* LLDP End of LLDPDU header */
+#define LIBNET_PBLOCK_LLDP_ORG_SPEC_H   0x55    /* LLDP Organization Specific header */
+#define LIBNET_PBLOCK_UDLD_H            0x56    /* UDLD header */
+#define LIBNET_PBLOCK_UDLD_DEVICE_ID_H  0x57    /* UDLD Device ID header*/
+#define LIBNET_PBLOCK_UDLD_PORT_ID_H    0x58    /* UDLD Port ID header */
+#define LIBNET_PBLOCK_UDLD_ECHO_H       0x59    /* UDLD Echo ID header */
+#define LIBNET_PBLOCK_UDLD_MSG_INTERVAL_H 0x60  /* UDLD Message Interval header */
+#define LIBNET_PBLOCK_UDLD_TMT_INTERVAL_H 0x61  /* UDLD Timeout Interval header */
+#define LIBNET_PBLOCK_UDLD_DEVICE_NAME_H  0x62  /* UDLD Device Name header*/
+#define LIBNET_PBLOCK_UDLD_SEQ_NUMBER_H 0x63    /* UDLD Sequence Number header */
 
     uint8_t flags;                             /* control flags */
 #define LIBNET_PBLOCK_DO_CHECKSUM       0x01    /* needs a checksum */
@@ -185,7 +191,7 @@ typedef struct libnet_protocol_block libnet_pblock_t;
  */
 struct libnet_context
 {
-#if ((__WIN32__) && !(__CYGWIN__)) 
+#if ((_WIN32) && !(__CYGWIN__)) 
     SOCKET fd;
     LPADAPTER  lpAdapter;
 #else
@@ -231,6 +237,8 @@ struct libnet_context
 
     char err_buf[LIBNET_ERRBUF_SIZE];   /* error buffer */
     uint32_t total_size;               /* total size */
+
+    struct libnet_ether_addr link_addr; /* Link HW addr */
 };
 typedef struct libnet_context libnet_t;
 
@@ -257,4 +265,9 @@ typedef struct _libnet_context_queue_descriptor libnet_cqd_t;
 
 #endif  /* __LIBNET_STRUCTURES_H */
 
-/* EOF */
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

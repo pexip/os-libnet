@@ -8,24 +8,34 @@
  *  All rights reserved.
  *
  * Copyright (c) 1993, 1994, 1995, 1996, 1997
- * The Regents of the University of California.  All rights reserved.
+ *	The Regents of the University of California.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that: (1) source code distributions
- * retain the above copyright notice and this paragraph in its entirety, (2)
- * distributions including binary code include the above copyright notice and
- * this paragraph in its entirety in the documentation or other materials
- * provided with the distribution, and (3) all advertising materials mentioning
- * features or use of this software display the following acknowledgement:
- * ``This product includes software developed by the University of California,
- * Lawrence Berkeley Laboratory and its contributors.'' Neither the name of
- * the University nor the names of its contributors may be used to endorse
- * or promote products derived from this software without specific prior
- * written permission.
- * THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the University nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  */
+
+#include "common.h"
 
 #include <sys/param.h>
 #include <sys/file.h>
@@ -33,21 +43,15 @@
 #include <netinet/udp.h>
 #include <netinet/tcp.h>
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-#include "../include/libnet.h"
-
 #include <net/raw.h>
 #include <net/if.h>
+#include <net/bpf.h>
 
 #include <netinet/ip_var.h>
 #include <netinet/if_ether.h>
 #include <netinet/udp_var.h>
-#include <netinet/tcpip.h>
 
 #include "../include/gnuc.h"
-#include "../include/bpf.h"
 #ifdef HAVE_OS_PROTO_H
 #include "../include/os-proto.h"
 #endif
@@ -63,14 +67,17 @@ libnet_open_link(libnet_t *l)
     struct sockaddr_raw sr;
     uint v;
 
-    if (l == NULL) { 
+    if (l == NULL)
+    {
         return -1;
     }
 
     l->fd = socket(PF_RAW, SOCK_RAW, RAWPROTO_DRAIN);
 
-    if (l->fd < 0) {
-        sprintf(l->err_buf, "drain socket: %s", strerror(errno));
+    if (l->fd < 0)
+    {
+        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
+                 "drain socket: %s", strerror(errno));
         goto bad;
     }
 
@@ -79,8 +86,10 @@ libnet_open_link(libnet_t *l)
     strncpy(sr.sr_ifname, l->device, sizeof(sr.sr_ifname) - 1);
     sr.sr_ifname[sizeof(sr.sr_ifname) - 1] = '\0';
 
-    if (bind(l->fd, (struct sockaddr *)&sr, sizeof(sr))) {
-        sprintf(l->err_buf, "drain bind: %s", strerror(errno));
+    if (bind(l->fd, (struct sockaddr *)&sr, sizeof(sr)))
+    {
+        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
+                 "drain bind: %s", strerror(errno));
         goto bad;
     }
 
@@ -95,20 +104,28 @@ libnet_open_link(libnet_t *l)
             strncmp("ep", l->device, 2) == 0  ||   /* Challenge 8x10 Mbit EPLEX */
             strncmp("vfe", l->device, 3) == 0 ||   /* Challenge VME 100Mbit */
             strncmp("fa", l->device, 2) == 0  ||
-            strncmp("qaa", l->device, 3) == 0) {
+            strncmp("qaa", l->device, 3) == 0)
+    {
         l->link_type = DLT_EN10MB;
     }
     else if (strncmp("ipg", l->device, 3) == 0 ||
             strncmp("rns", l->device, 3) == 0 ||        /* O2/200/2000 FDDI */
-            strncmp("xpi", l->device, 3) == 0) {
+            strncmp("xpi", l->device, 3) == 0)
+    {
         l->link_type = DLT_FDDI;
     }
-    else if (strncmp("ppp", l->device, 3) == 0) {
+    else if (strncmp("ppp", l->device, 3) == 0)
+    {
         l->link_type = DLT_RAW;
-    } else if (strncmp("lo", l->device, 2) == 0) {
+    }
+    else if (strncmp("lo", l->device, 2) == 0)
+    {
         l->link_type = DLT_NULL;
-    } else {
-        sprintf(l->err_buf, "drain: unknown physical layer type");
+    }
+    else
+    {
+        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
+                 "drain: unknown physical layer type");
         goto bad;
     }
 
@@ -166,43 +183,44 @@ libnet_get_hwaddr(libnet_t *l)
 {
     struct ifreq ifdat;
     int s = -1;
-    struct libnet_ether_addr *ea = NULL;
 
-    if (-1 == (s = socket(PF_RAW, SOCK_RAW, RAWPROTO_SNOOP))) {
+    if (-1 == (s = socket(PF_RAW, SOCK_RAW, RAWPROTO_SNOOP)))
+    {
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
                 "socket(): %s", strerror(errno));
         goto errout;
     }
+
     memset(&ifdat, 0, sizeof(struct ifreq));
     strncpy(ifdat.ifr_name, l->device, IFNAMSIZ);
-    if (ioctl(s, SIOCGIFADDR, &ifdat)) {
+    if (ioctl(s, SIOCGIFADDR, &ifdat) < 0)
+    {
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
                 "SIOCGIFADDR: %s", strerror(errno));
         goto errout;
     }
-    if (!(ea = malloc(sizeof(struct libnet_ether_addr)))) {
-        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                "malloc(): %s", strerror(errno));
-        goto errout;
-    }
-    memcpy(ea, &ifdat.ifr_addr.sa_data, ETHER_ADDR_LEN);
     close(s);
-    s = -1;
-    return ea;
+
+    return memcpy(l->link_addr.ether_addr_octet, &ifdat.ifr_addr.sa_data,
+                  ETHER_ADDR_LEN);
 
  errout:
-    if (s > 0) {
+    if (s > 0)
+    {
         close(s);
     }
-    if (ea) {
+    if (ea)
+    {
         free(ea);
         ea = 0;
     }
-    return 0;
+
+    return NULL;
 }
-/* ---- Emacs Variables ----
+
+/**
  * Local Variables:
- * c-basic-offset: 4
- * indent-tabs-mode: nil
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
  * End:
  */

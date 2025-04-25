@@ -30,15 +30,7 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-#if (!(_WIN32) || (__CYGWIN__)) 
-#include "../include/libnet.h"
-#else
-#include "../include/win32/libnet.h"
-#endif
-
+#include "common.h"
 
 /* TODO len - should be calculated if -1 */
 libnet_ptag_t
@@ -98,8 +90,7 @@ const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     ip_hdr.ip_src.s_addr = src;                       /* source ip */
     ip_hdr.ip_dst.s_addr = dst;                       /* destination ip */
     
-    n = libnet_pblock_append(l, p, (uint8_t *)&ip_hdr, LIBNET_IPV4_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&ip_hdr, LIBNET_IPV4_H) == -1)
     {
         goto bad;
     }
@@ -134,14 +125,14 @@ const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
         else
         {
              snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                     "%s(): IPv4 data pblock not found\n", __func__);
+                     "%s(): IPv4 data pblock not found", __func__);
         }
     }
 
     if (payload_s && !payload)
     {
          snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                 "%s(): payload inconsistency\n", __func__);
+                 "%s(): payload inconsistency", __func__);
         goto bad;
     }
 
@@ -263,7 +254,7 @@ libnet_autobuild_ipv4(uint16_t len, uint8_t prot, uint32_t dst, libnet_t *l)
     h = len;                                          /* header length */
     ptag = LIBNET_PTAG_INITIALIZER;
     src = libnet_get_ipaddr4(l);
-    if (src == -1)
+    if (src == UINT32_MAX)
     {
         /* err msg set in libnet_get_ipaddr() */ 
         return (-1);
@@ -309,8 +300,7 @@ libnet_autobuild_ipv4(uint16_t len, uint8_t prot, uint32_t dst, libnet_t *l)
     ip_hdr.ip_src.s_addr = src;                       /* source ip */
     ip_hdr.ip_dst.s_addr = dst;                       /* destination ip */
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&ip_hdr, LIBNET_IPV4_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&ip_hdr, LIBNET_IPV4_H) == -1)
     {
         goto bad;
     }
@@ -330,7 +320,7 @@ libnet_build_ipv4_options(const uint8_t *options, uint32_t options_s, libnet_t *
 libnet_ptag_t ptag)
 {
     int options_size_increase = 0; /* increase will be negative if it's a decrease */
-    uint32_t n, adj_size;
+    uint32_t adj_size;
     libnet_pblock_t *p, *p_temp;
     struct libnet_ipv4_hdr *ip_hdr;
 
@@ -343,7 +333,7 @@ libnet_ptag_t ptag)
     if (options_s > LIBNET_MAXOPTION_SIZE)
     {
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-            "%s(): options list is too large %d\n", __func__, options_s);
+            "%s(): options list is too large %d", __func__, options_s);
         return (-1);
     }
 
@@ -379,15 +369,13 @@ libnet_ptag_t ptag)
     }
 
     /* append options */
-    n = libnet_pblock_append(l, p, options, options_s);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, options, options_s) == -1)
     {
         goto bad;
     }
 
     /* append padding */
-    n = libnet_pblock_append(l, p, (uint8_t*)"\0\0\0", adj_size - options_s);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t*)"\0\0\0", adj_size - options_s) == -1)
     {
         goto bad;
     }
@@ -433,7 +421,7 @@ const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     if (LIBNET_IPV6_H + payload_s > IP_MAXPACKET)
     {  
          snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                 "%s(): IP packet too large\n", __func__);
+                 "%s(): IP packet too large", __func__);
         return (-1);
     }  
        
@@ -450,7 +438,7 @@ const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     memset(&ip_hdr, 0, sizeof(ip_hdr));
     ip_hdr.ip_flags[0] = (0x06 << 4) | ((tc & 0xF0) >> 4);
     ip_hdr.ip_flags[1] = ((tc & 0x0F) << 4) | ((fl & 0xF0000) >> 16);
-    ip_hdr.ip_flags[2] = fl & 0x0FF00 >> 8;
+    ip_hdr.ip_flags[2] = (fl & 0x0FF00) >> 8;
     ip_hdr.ip_flags[3] = fl & 0x000FF;
     ip_hdr.ip_len      = htons(len);
     ip_hdr.ip_nh       = nh;
@@ -458,8 +446,7 @@ const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     ip_hdr.ip_src      = src;
     ip_hdr.ip_dst      = dst;
      
-    n = libnet_pblock_append(l, p, (uint8_t *)&ip_hdr, LIBNET_IPV6_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&ip_hdr, LIBNET_IPV6_H) == -1)
     {
         goto bad;
     }
@@ -499,7 +486,7 @@ libnet_ptag_t ptag)
     if (LIBNET_IPV6_FRAG_H + payload_s > IP_MAXPACKET)
     {
          snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                 "%s(): IP packet too large\n", __func__);
+                 "%s(): IP packet too large", __func__);
         return (-1);
     }
 
@@ -522,9 +509,8 @@ libnet_ptag_t ptag)
     /*
      *  Appened the protocol unit to the list.
      */
-    n = libnet_pblock_append(l, p, (uint8_t *)&ipv6_frag_hdr,
-        LIBNET_IPV6_FRAG_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&ipv6_frag_hdr,
+                             LIBNET_IPV6_FRAG_H) == -1)
     {
         goto bad;
     }
@@ -568,7 +554,7 @@ libnet_ptag_t ptag)
     if (LIBNET_IPV6_ROUTING_H + payload_s > IP_MAXPACKET)
     {
          snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                 "%s(): IP packet too large\n", __func__);
+                 "%s(): IP packet too large", __func__);
         return (-1);
     }
 
@@ -591,9 +577,8 @@ libnet_ptag_t ptag)
     /*
      *  Appened the protocol unit to the list.
      */
-    n = libnet_pblock_append(l, p, (uint8_t *)&ipv6_routing_hdr,
-        LIBNET_IPV6_ROUTING_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&ipv6_routing_hdr,
+                             LIBNET_IPV6_ROUTING_H) == -1)
     {
         goto bad;
     }
@@ -636,7 +621,7 @@ uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     if (LIBNET_IPV6_DESTOPTS_H + payload_s > IP_MAXPACKET)
     {
          snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                 "%s(): IP packet too large\n", __func__);
+                 "%s(): IP packet too large", __func__);
         return (-1);
     }
 
@@ -657,9 +642,8 @@ uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     /*
      *  Appened the protocol unit to the list.
      */
-    n = libnet_pblock_append(l, p, (uint8_t *)&ipv6_destopts_hdr,
-        LIBNET_IPV6_DESTOPTS_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&ipv6_destopts_hdr,
+                             LIBNET_IPV6_DESTOPTS_H) == -1)
     {
         goto bad;
     }
@@ -702,7 +686,7 @@ uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     if (LIBNET_IPV6_HBHOPTS_H + payload_s > IP_MAXPACKET)
     {
          snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                 "%s(): IP packet too large\n", __func__);
+                 "%s(): IP packet too large", __func__);
         return (-1);
     }
 
@@ -723,9 +707,8 @@ uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     /*
      *  Appened the protocol unit to the list.
      */
-    n = libnet_pblock_append(l, p, (uint8_t *)&ipv6_hbhopts_hdr,
-        LIBNET_IPV6_HBHOPTS_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&ipv6_hbhopts_hdr,
+                             LIBNET_IPV6_HBHOPTS_H) == -1)
     {
         goto bad;
     }
@@ -761,3 +744,9 @@ libnet_autobuild_ipv6(uint16_t len, uint8_t nh, struct libnet_in6_addr dst,
     return libnet_build_ipv6(0, 0, len, nh, 64, src, dst, NULL, 0, l, ptag);
 }
 
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

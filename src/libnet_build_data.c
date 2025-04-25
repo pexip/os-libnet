@@ -30,14 +30,7 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-#if (!(_WIN32) || (__CYGWIN__)) 
-#include "../include/libnet.h"
-#else
-#include "../include/win32/libnet.h"
-#endif
+#include "common.h"
 
 /* FIXME this won't work with TCP or IPv4 data, which is probably a bug */
 libnet_ptag_t
@@ -74,4 +67,9 @@ bad:
     return (-1);
 }
 
-/* EOF */
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

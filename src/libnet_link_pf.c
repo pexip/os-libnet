@@ -11,29 +11,34 @@
  *	The Regents of the University of California.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that: (1) source code distributions
- * retain the above copyright notice and this paragraph in its entirety, (2)
- * distributions including binary code include the above copyright notice and
- * this paragraph in its entirety in the documentation or other materials
- * provided with the distribution, and (3) all advertising materials mentioning
- * features or use of this software display the following acknowledgement:
- * ``This product includes software developed by the University of California,
- * Lawrence Berkeley Laboratory and its contributors.'' Neither the name of
- * the University nor the names of its contributors may be used to endorse
- * or promote products derived from this software without specific prior
- * written permission.
- * THIS SOFTWARE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the University nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software
+ *    without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ * SUCH DAMAGE.
  *
  * packet filter subroutines for tcpdump
  *	Extraction/creation by Jeffrey Mogul, DECWRL
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-#include "../include/low_libnet.h"
+#include "common.h"
 
 #include "../include/gnuc.h"
 #ifdef HAVE_OS_PROTO_H
@@ -43,7 +48,7 @@
 struct libnet_link_int *
 libnet_open_link_interface(int8_t *device, int8_t *ebuf)
 {
-    register struct libnet_link_int *l;
+    struct libnet_link_int *l;
     int16_t enmode;
     int backlog = -1;   /* request the most */
     struct enfilter Filter;
@@ -52,14 +57,16 @@ libnet_open_link_interface(int8_t *device, int8_t *ebuf)
     l = (struct libnet_link_int *)malloc(sizeof(*l));
     if (l == NULL)
     {
-        sprintf(ebuf, "libnet_open_link_int: %s", strerror(errno));
+        snprintf(ebuf, LIBNET_ERRBUF_SIZE,
+                 "libnet_open_link_int: %s", strerror(errno));
         return (0);
     }
     memset(l, 0, sizeof(*l));
     l->fd = pfopen(device, O_RDWR);
     if (l->fd < 0)
     {
-        sprintf(ebuf, "pf open: %s: %s\n\your system may not be properly configured; see \"man packetfilter(4)\"\n",
+        snprintf(ebuf, LIBNET_ERRBUF_SIZE,
+                 "pf open: %s: %s\nyour system may not be properly configured; see \"man packetfilter(4)\"",
             device, strerror(errno));
         goto bad;
     }
@@ -67,7 +74,8 @@ libnet_open_link_interface(int8_t *device, int8_t *ebuf)
     enmode = ENTSTAMP|ENBATCH|ENNONEXCL;
     if (ioctl(l->fd, EIOCMBIS, (caddr_t)&enmode) < 0)
     {
-        sprintf(ebuf, "EIOCMBIS: %s", strerror(errno));
+        snprintf(ebuf, LIBNET_ERRBUF_SIZE,
+                 "EIOCMBIS: %s", strerror(errno));
         goto bad;
     }
 #ifdef	ENCOPYALL
@@ -78,7 +86,8 @@ libnet_open_link_interface(int8_t *device, int8_t *ebuf)
 	/* set the backlog */
     if (ioctl(l->fd, EIOCSETW, (caddr_t)&backlog) < 0)
     {
-        sprintf(ebuf, "EIOCSETW: %s", strerror(errno));
+        snprintf(ebuf, LIBNET_ERRBUF_SIZE,
+                 "EIOCSETW: %s", strerror(errno));
         goto bad;
     }
     /*
@@ -86,7 +95,8 @@ libnet_open_link_interface(int8_t *device, int8_t *ebuf)
      */
     if (ioctl(l->fd, EIOCDEVP, (caddr_t)&devparams) < 0)
     {
-        sprintf(ebuf, "EIOCDEVP: %s", strerror(errno));
+        snprintf(ebuf, LIBNET_ERRBUF_SIZE,
+                 "EIOCDEVP: %s", strerror(errno));
         goto bad;
     }
 
@@ -120,7 +130,8 @@ libnet_open_link_interface(int8_t *device, int8_t *ebuf)
     Filter.enf_FilterLen = 0;	/* means "always true" */
     if (ioctl(l->fd, EIOCSETF, (caddr_t)&Filter) < 0)
     {
-        sprintf(ebuf, "EIOCSETF: %s", strerror(errno));
+        snprintf(ebuf, LIBNET_ERRBUF_SIZE,
+                 "EIOCSETF: %s", strerror(errno));
         goto bad;
     }
 
@@ -157,8 +168,15 @@ libnet_write_link_layer(struct libnet_link_int *l, const int8_t *device,
     if (c != len)
     {
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-            "libnet_write_link: %d bytes written (%s)\n", c,
+            "libnet_write_link: %d bytes written (%s)", c,
             strerror(errno));
     }
     return (c);
 }
+
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

@@ -73,7 +73,7 @@ main(int argc, char *argv[])
     }
 
     /*
-     *  Initialize the library.  Root priviledges are required.
+     *  Initialize the library.  Root privileges are required.
      */
     l = libnet_init(
             LIBNET_LINK,                            /* injection type */
@@ -164,4 +164,3 @@ bad:
     return (EXIT_FAILURE);
 }
 
-/* EOF */

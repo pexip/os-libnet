@@ -31,21 +31,14 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-
-#if (!(_WIN32) || (__CYGWIN__))
-#include "../include/libnet.h"
-#else
-#include "../include/win32/libnet.h"
-#endif
+#include "common.h"
 
 libnet_ptag_t
 libnet_build_link(const uint8_t *dst, const uint8_t *src, const uint8_t *oui, uint16_t type,
 const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
 
 {
+    (void)oui; /* unused */
     uint8_t org[3] = {0x00, 0x00, 0x00};
     switch (l->link_type)
     {
@@ -60,13 +53,14 @@ const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
                     l, ptag);
     }
     snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-            "%s(): linktype %d not supported\n", __func__, l->link_type);
+            "%s(): linktype %d not supported", __func__, l->link_type);
     return -1;
 }
 
 libnet_ptag_t
 libnet_autobuild_link(const uint8_t *dst, const uint8_t *oui, uint16_t type, libnet_t *l)
 {
+    (void)oui; /* unused */
     uint8_t org[3] = {0x00, 0x00, 0x00};
     switch (l->link_type)
     {
@@ -79,7 +73,13 @@ libnet_autobuild_link(const uint8_t *dst, const uint8_t *oui, uint16_t type, lib
                    LIBNET_SAP_SNAP, 0x03, org, TOKEN_RING_TYPE_IP, l));
     }
     snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-            "%s(): linktype %d not supported\n", __func__, l->link_type);
+            "%s(): linktype %d not supported", __func__, l->link_type);
     return (-1);
 }
 
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

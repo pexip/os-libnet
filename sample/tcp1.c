@@ -30,13 +30,7 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
 #include "libnet_test.h"
-#ifdef __WIN32__
-#include "../include/win32/getopt.h"
-#endif
 
 int
 main(int argc, char *argv[])
@@ -80,7 +74,7 @@ main(int argc, char *argv[])
             /*
              *  We expect the input to be of the form `ip.ip.ip.ip.port`.  We
              *  point cp to the last dot of the IP address/port string and
-             *  then seperate them with a NULL byte.  The optarg now points to
+             *  then separate them with a NULL byte.  The optarg now points to
              *  just the IP address, and cp points to the port.
              */
             case 'd':
@@ -219,9 +213,3 @@ usage(char *name)
         name);
 }
 
-#if defined(__WIN32__)
-#include <../include/win32/getopt.h>
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#endif  /* __WIN32__ */
-/* EOF */

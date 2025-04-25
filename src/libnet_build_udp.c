@@ -30,14 +30,7 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-#if (!(_WIN32) || (__CYGWIN__)) 
-#include "../include/libnet.h"
-#else
-#include "../include/win32/libnet.h"
-#endif
+#include "common.h"
 
 libnet_ptag_t
 libnet_build_udp(uint16_t sp, uint16_t dp, uint16_t len, uint16_t sum,
@@ -70,8 +63,7 @@ const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     udp_hdr.uh_ulen    = htons(len);            /* total length of UDP packet*/
     udp_hdr.uh_sum     = (sum ? htons(sum) : 0);/* checksum */
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&udp_hdr, LIBNET_UDP_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&udp_hdr, LIBNET_UDP_H) == -1)
     {
         goto bad;
     }
@@ -94,4 +86,9 @@ bad:
     return (-1);
 }
 
-/* EOF */
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

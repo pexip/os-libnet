@@ -30,14 +30,7 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-#if (!(_WIN32) || (__CYGWIN__)) 
-#include "../include/libnet.h"
-#else
-#include "../include/win32/libnet.h"
-#endif
+#include "common.h"
 
 uint16_t *all_lists;
 
@@ -47,7 +40,8 @@ libnet_plist_chain_new(libnet_t *l, libnet_plist_t **plist, char *token_list)
     char libnet_plist_legal_tokens[] = "0123456789,- ";
     libnet_plist_t *tmp;
     char *tok;
-    int i, j, valid_token, cur_node;
+    int i, valid_token, cur_node;
+    size_t j;
     uint16_t *all_lists_tmp;
     static uint8_t cur_id;
 
@@ -77,7 +71,7 @@ libnet_plist_chain_new(libnet_t *l, libnet_plist_t **plist, char *token_list)
         if (!valid_token)
         {
             snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                    "libnet_build_plist_chain: illegal token # %d (%c)\n",
+                    "libnet_build_plist_chain: illegal token # %d (%c)",
                     i + 1,
                     token_list[i]);
             *plist = NULL;
@@ -91,7 +85,7 @@ libnet_plist_chain_new(libnet_t *l, libnet_plist_t **plist, char *token_list)
     if (!(*plist))
     {
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                    "libnet_build_plist_chain: malloc %s\n", strerror(errno));
+                    "libnet_build_plist_chain: malloc %s", strerror(errno));
         *plist = NULL;
         return (-1);
     }
@@ -106,7 +100,8 @@ libnet_plist_chain_new(libnet_t *l, libnet_plist_t **plist, char *token_list)
     {
         all_lists = all_lists_tmp;
         snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                    "libnet_build_plist_chain: realloc %s\n", strerror(errno));
+                    "libnet_build_plist_chain: realloc %s", strerror(errno));
+        free(tmp);
         *plist = NULL;
         return(-1);
     }
@@ -130,7 +125,7 @@ libnet_plist_chain_new(libnet_t *l, libnet_plist_t **plist, char *token_list)
             if (!tmp->next)
             {
                 snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
-                    "libnet_build_plist_chain: malloc %s\n", strerror(errno));
+                    "libnet_build_plist_chain: malloc %s", strerror(errno));
                 /*
                  *  XXX - potential memory leak if other nodes are allocated
                  *  but not freed.
@@ -256,16 +251,17 @@ libnet_plist_chain_dump_string(libnet_plist_t *plist)
     {
         if (plist->bport == plist->eport)
         {
-            i = snprintf(&buf[j], BUFSIZ, "%d", plist->bport);
+            i = snprintf(&buf[j], BUFSIZ-j, "%d", plist->bport);
         }
         else
         {
-            i = snprintf(&buf[j], BUFSIZ, "%d-%d", plist->bport, plist->eport);
+            i = snprintf(&buf[j], BUFSIZ-j, "%d-%d", plist->bport, plist->eport);
         }
         j += i;
         if (plist->next)
         {
-            snprintf(&buf[j++], BUFSIZ, ",");
+            snprintf(&buf[j], BUFSIZ-j, ",");
+            j++;
         }
     }
     return (strdup(buf));       /* XXX - reentrancy == no */
@@ -292,4 +288,9 @@ libnet_plist_chain_free(libnet_plist_t *plist)
     return (1);
 }
 
-/* EOF */
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

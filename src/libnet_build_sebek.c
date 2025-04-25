@@ -29,14 +29,7 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-#if (!(_WIN32) || (__CYGWIN__)) 
-#include "../include/libnet.h"
-#else
-#include "../include/win32/libnet.h"
-#endif
+#include "common.h"
 
 libnet_ptag_t
 libnet_build_sebek(uint32_t magic, uint16_t version, uint16_t type, 
@@ -78,8 +71,7 @@ const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
     memcpy(sebek_hdr.cmd, cmd, SEBEK_CMD_LENGTH*sizeof(uint8_t));
     sebek_hdr.length = htonl(length);
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&sebek_hdr, LIBNET_SEBEK_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&sebek_hdr, LIBNET_SEBEK_H) == -1)
     {
         goto bad;
     }
@@ -92,4 +84,10 @@ bad:
     libnet_pblock_delete(l, p);
     return (-1);
 }
-/* EOF */
+
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */

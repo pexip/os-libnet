@@ -1,4 +1,2 @@
-fix-socklent
-fix-return-value-ignore
-fix-samples
-fix-manpages
+avoid_soname_bump.diff
+libnet-config-no-libdir.diff

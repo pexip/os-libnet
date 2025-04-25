@@ -28,14 +28,7 @@
  *
  */
 
-#if (HAVE_CONFIG_H)
-#include "../include/config.h"
-#endif
-#if (!(_WIN32) || (__CYGWIN__)) 
-#include "../include/libnet.h"
-#else
-#include "../include/win32/libnet.h"
-#endif
+#include "common.h"
 
 /*
  * Overall packet
@@ -199,8 +192,7 @@ const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
 
     gre_hdr.flags_ver = htons(fv);
     gre_hdr.type      = htons(type);
-    n = libnet_pblock_append(l, p, (uint8_t *)&gre_hdr, LIBNET_GRE_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&gre_hdr, LIBNET_GRE_H) == -1)
     {
         /* err msg set in libnet_pblock_append() */
         goto bad; 
@@ -210,17 +202,15 @@ const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
 	(fv & GRE_VERSION_MASK))                                       /* v1 */
     {
         sum = htons(sum);
-        n = libnet_pblock_append(l, p, (uint8_t*)&sum,
-                sizeof(gre_hdr.gre_sum));
-	if (n == -1)
+	if (libnet_pblock_append(l, p, (uint8_t*)&sum,
+                                 sizeof(gre_hdr.gre_sum)) == -1)
 	{
 	    /* err msg set in libnet_pblock_append() */
 	    goto bad;
 	}
 	offset = htons(offset);
-	n = libnet_pblock_append(l, p, (uint8_t*)&offset, 
-                sizeof(gre_hdr.gre_offset));
-	if (n == -1)
+	if (libnet_pblock_append(l, p, (uint8_t*)&offset,
+                                 sizeof(gre_hdr.gre_offset)) == -1)
 	{
 	    /* err msg set in libnet_pblock_append() */
 	    goto bad;
@@ -231,9 +221,8 @@ const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
 	( (fv & GRE_VERSION_MASK) && (fv & GRE_SEQ)) )                 /* v1 */
     {
 	key = htonl(key);
-	n = libnet_pblock_append(l, p, (uint8_t*)&key,
-                sizeof(gre_hdr.gre_key));
-	if (n == -1)
+	if (libnet_pblock_append(l, p, (uint8_t*)&key,
+                                 sizeof(gre_hdr.gre_key)) == -1)
 	{
 	    /* err msg set in libnet_pblock_append() */
 	    goto bad;
@@ -244,9 +233,8 @@ const uint8_t *payload, uint32_t payload_s, libnet_t *l, libnet_ptag_t ptag)
 	( (fv & GRE_VERSION_MASK) && (fv & GRE_ACK)) )                 /* v1 */
     {
 	seq = htonl(seq);
-	n = libnet_pblock_append(l, p, (uint8_t*)&seq, 
-                sizeof(gre_hdr.gre_seq));
-	if (n == -1)
+	if (libnet_pblock_append(l, p, (uint8_t*)&seq,
+                                 sizeof(gre_hdr.gre_seq)) == -1)
 	{
 	    /* err msg set in libnet_pblock_append() */
 	    goto bad;
@@ -323,8 +311,7 @@ libnet_ptag_t ptag)
     sre_hdr.af = htons(af);
     sre_hdr.sre_offset = offset;
     sre_hdr.sre_length = length;
-    n = libnet_pblock_append(l, p, (uint8_t *)&sre_hdr, LIBNET_GRE_SRE_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&sre_hdr, LIBNET_GRE_SRE_H) == -1)
     {
         /* err msg set in libnet_pblock_append() */
         goto bad; 
@@ -332,14 +319,14 @@ libnet_ptag_t ptag)
 
     if ((routing && !length) || (!routing && length))
     {
-        sprintf(l->err_buf, "%s(): routing inconsistency\n", __func__);
+        snprintf(l->err_buf, LIBNET_ERRBUF_SIZE,
+                 "%s(): routing inconsistency", __func__);
         goto bad;
     }
 
     if (routing && length)
     {
-        n = libnet_pblock_append(l, p, routing, length);
-        if (n == -1)
+        if (libnet_pblock_append(l, p, routing, length) == -1)
         {
             /* err msg set in libnet_pblock_append() */
             goto bad;
@@ -381,8 +368,7 @@ libnet_build_gre_last_sre(libnet_t *l, libnet_ptag_t ptag)
         return (-1);
     }
 
-    n = libnet_pblock_append(l, p, (uint8_t *)&zero, LIBNET_GRE_SRE_H);
-    if (n == -1)
+    if (libnet_pblock_append(l, p, (uint8_t *)&zero, LIBNET_GRE_SRE_H) == -1)
     {
         /* err msg set in libnet_pblock_append() */
         goto bad; 
@@ -396,4 +382,10 @@ bad:
     return (-1);
 
 }
-/* EOF */
+
+/**
+ * Local Variables:
+ *  indent-tabs-mode: nil
+ *  c-file-style: "stroustrup"
+ * End:
+ */
