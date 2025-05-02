@@ -14,6 +14,7 @@ Section: libs
 Multi-Arch: same
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${shlibs:Depends}, ${misc:Depends}
+Breaks: libnet1-doc (<< 1.3+dfsg-1)
 Description: library for the construction and handling of network packets
  libnet provides a portable framework for low-level network packet
  writing and handling.
@@ -55,6 +56,8 @@ Architecture: all
 Section: doc
 Suggests: libnet1-dev
 Depends: ${misc:Depends}
+Breaks: libnet1 (<< 1.3+dfsg-1)
+Replaces: libnet1 (<< 1.3+dfsg-1)
 Description: developers documentation files for libnet
  libnet provides a portable framework for low-level network packet
  writing and handling.
